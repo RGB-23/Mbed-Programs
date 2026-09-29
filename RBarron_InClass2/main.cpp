@@ -35,7 +35,7 @@ void rob_thread() {
             // turn LED on
             *CLEAR = (0x1 << GREEN);
 
-            ThisThread::sleep_for(250ms);
+            ThisThread::sleep_for(250ms); // this is duty cycle
 
             // turn LED off
             *SET = (0x1 << GREEN);
@@ -60,7 +60,7 @@ int main()
     setbit(DIRSET, GREEN);
 
     coop_thread.start(rob_thread);
-    coop_tick.attach(&rob_ticker, 3.0);
+    coop_tick.attach(&rob_ticker, 3.0); // this is frequency
 
     while (true) {
 
