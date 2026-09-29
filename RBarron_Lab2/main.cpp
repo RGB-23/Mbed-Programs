@@ -36,14 +36,36 @@ Ticker ticker;
 // frequency for the square wave
 static float frequency = 1; // in seconds
 
+int ticker_count = 0;
+
 // interrupt class for ticker
 void interrupt() {
 
-    // turn LED on
-    *CLEAR = (0x1 << GREEN);
+    ticker_count++;
 
-    // turn LED off
-    *SET = (0x1 << GREEN);
+    // wait 1us to turn on
+    if(ticker_count == 1) {
+        
+        // turn LED on
+        *CLEAR = (0x1 << GREEN);
+
+    }
+
+    // wait 2us to turn off
+    if(ticker_count == 2) {
+        
+        // turn LED off
+        *SET = (0x1 << GREEN);
+
+    }
+
+    // reset ticker after 3us
+    if(ticker_count == 3) {
+
+        ticker_count = 0;
+
+    }
+    
 
 }
 
