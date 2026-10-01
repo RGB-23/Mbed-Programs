@@ -19,6 +19,8 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
+#define DUTY_CYCLE_NUM 3
+
 USBSerial serial;
 
 
@@ -34,39 +36,44 @@ MemoryPool<int, 9> mempool1;
 Ticker ticker;
 
 // frequency for the square wave
-static float frequency = 1; // in seconds
+static float frequency = 100; // in microseconds
+
+// duty cycle associated with the square wave
+float duty_cycle_frequency = 0;
 
 int ticker_count = 0;
 
 // interrupt class for ticker
 void interrupt() {
 
-    ticker_count++;
+    // count up every time ticker fires
+    ticker_count = ticker_count + 1;
 
-    // wait 1us to turn on
-    if(ticker_count == 1) {
-        
+
+    // reset the ticker if it reaches 100 ticks (100 microseconds)
+    // so that it resents for the sake of the duty cycle
+    if (ticker_count >= frequency) {
+
+        ticker_count = 0;
+
+    }
+
+    // turn and keep LED on for however long the duty cycle is
+    else if(ticker_count < duty_cycle_frequency) {
+
         // turn LED on
         *CLEAR = (0x1 << GREEN);
 
     }
 
-    // wait 2us to turn off
-    if(ticker_count == 2) {
-        
+    // turn and keep LED off after the duty cycle limit is reached
+    else if(ticker_count > duty_cycle_frequency) {
+
         // turn LED off
         *SET = (0x1 << GREEN);
 
     }
-
-    // reset ticker after 3us
-    if(ticker_count == 3) {
-
-        ticker_count = 0;
-
-    }
     
-
 }
 
 
@@ -74,10 +81,10 @@ void interrupt() {
 void producer() {
     
     // array of all the duty cycles
-    float duty_cycles[9] = {.1, .2, .3, .4, .5, .6, .7, .8, .9};
+    int duty_cycles[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
 
     // for vanilla we only need 1/3 rate so only add the first 3
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
 
         // create space in mempool for each duty cycle
         int *duty = mempool1.try_alloc();
@@ -92,33 +99,28 @@ void producer() {
 
 }
 
-
 void vanilla_consumer() {
 
-    // set the blue and red bits so they are turned off
-    setbit(SET, BLUE);
-    setbit(SET, RED);
-
     while(true) {
-        
+            
+        // pointer used get the last element in the queue
         int *pwm_ptr;
 
-        // get the last element in the queue
+        // point pwm_ptr to the last element in the queue
         queue1.try_get(&pwm_ptr);
 
         // pwm is the value at the location of pwm_ptr
         int pwm = *pwm_ptr;
 
-        // duty cycle
-        float time = pwm * frequency;
-
-        // multiply pwm by ticker for certain % duty cycle
-        //ThisThread::sleep_for(std::chrono::milliseconds(int(time)));
+        // duty_cycle_frequency is the duty cycle related to the overall
+        // frequency of the pulse width modulation
+        // multiple by 0.01 to make the duty cycles into percents
+        // example frequency = 100. pwm = 30, so 30 * 0.01 * 100 = 30
+        duty_cycle_frequency = (pwm * 0.01) * frequency;
 
     }
 
 }
-
 
 Thread prod;
 Thread cons;
@@ -138,11 +140,11 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(&interrupt, 1us); // this is frequency for each square wave
+    ticker.attach(&interrupt, 100us); // this is frequency for each square wave
 
     while (true) {
 
-        //ThisThread::sleep_for(1s);
+        ThisThread::sleep_for(1s);
 
     }
 
