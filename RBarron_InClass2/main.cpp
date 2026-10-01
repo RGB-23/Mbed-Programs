@@ -30,19 +30,24 @@ void rob_thread() {
     while(true) {
 
         // check to see if ticker has run
-        if(rob > 0) {
+        if(rob < 33) {
 
             // turn LED on
             *CLEAR = (0x1 << GREEN);
 
-            ThisThread::sleep_for(1ms); // this is duty cycle
+        }
+
+        if(rob >= 33) {
 
             // turn LED off
             *SET = (0x1 << GREEN);
 
-            // reset the count
-            rob = 0;
 
+        }
+
+        if (rob == 100) {
+
+            rob = 0;
         }
     }
 }
@@ -60,7 +65,7 @@ int main()
     setbit(DIRSET, GREEN);
 
     coop_thread.start(rob_thread);
-    coop_tick.attach(&rob_ticker, 1s); // this is frequency
+    coop_tick.attach(&rob_ticker, 10s); // this is frequency
 
     while (true) {
 

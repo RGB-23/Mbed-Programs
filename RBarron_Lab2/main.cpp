@@ -36,7 +36,7 @@ MemoryPool<int, 9> mempool1;
 Ticker ticker;
 
 // frequency for the square wave
-static float frequency = 100; // in microseconds
+static float period = 100; // in microseconds
 
 // duty cycle associated with the square wave
 float duty_cycle_frequency = 0;
@@ -52,14 +52,14 @@ void interrupt() {
 
     // reset the ticker if it reaches 100 ticks (100 microseconds)
     // so that it resents for the sake of the duty cycle
-    if (ticker_count >= frequency) {
+    if (ticker_count >= period) {
 
         ticker_count = 0;
 
     }
 
     // turn and keep LED on for however long the duty cycle is
-    else if(ticker_count < duty_cycle_frequency) {
+    else if(ticker_count <= duty_cycle_frequency) {
 
         // turn LED on
         *CLEAR = (0x1 << GREEN);
@@ -92,7 +92,7 @@ void producer() {
         // the address of duty is equal to the duty cycle number
         *duty = duty_cycles[i];
 
-        // put each pointer of the duty cycle onto the queue
+        // put the value of each pointer for the duty cycle onto the queue
         queue1.try_put(duty);
 
     }
@@ -114,9 +114,9 @@ void vanilla_consumer() {
 
         // duty_cycle_frequency is the duty cycle related to the overall
         // frequency of the pulse width modulation
-        // multiple by 0.01 to make the duty cycles into percents
-        // example frequency = 100. pwm = 30, so 30 * 0.01 * 100 = 30
-        duty_cycle_frequency = (pwm * 0.01) * frequency;
+        // multiply by 0.01 to make the duty cycles into percentages of the pwm square waves
+        // example: frequency = 100. pwm = 30, so (30 * 0.01) * 100 = 30
+        duty_cycle_frequency = (pwm * 0.01) * period;
 
     }
 
@@ -140,7 +140,7 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(&interrupt, 100us); // this is frequency for each square wave
+    ticker.attach(&interrupt, 1us); // this is frequency for each square wave
 
     while (true) {
 
