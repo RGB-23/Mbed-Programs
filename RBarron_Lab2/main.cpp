@@ -92,18 +92,18 @@ void producer() {
         // the address of duty is equal to the duty cycle number
         *duty = duty_cycles[i];
 
-        serial.printf("duty value: %d\r\n", *duty);
+        //serial.printf("duty value: %d\r\n", *duty);
 
-        serial.printf("duty_cycle value: %d\r\n", duty_cycles[i]);
+        //serial.printf("duty_cycle value: %d\r\n", duty_cycles[i]);
 
         // put the value of each pointer for the duty cycle onto the queue
         queue1.try_put(duty);
 
-        serial.printf("HELLO1\r\n");
+        //serial.printf("HELLO1\r\n");
 
     }
 
-    ThisThread::sleep_for(5s);
+    ThisThread::sleep_for(1ms);
 
 }
 
@@ -114,22 +114,20 @@ void vanilla_consumer() {
         // pointer used get the last element in the queue
         int *pwm_ptr;
 
-        serial.printf("HELLO2\r\n");        
+        //serial.printf("HELLO2\r\n");        
 
         // point pwm_ptr to the last element in the queue
-        if(queue1.try_get_for(1s, &pwm_ptr)) {
+        if(queue1.try_get_for(1ms, &pwm_ptr)) {
 
-            serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
+            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
 
             // set the duty cycle
             duty_cycle_frequency = (*pwm_ptr);
 
-            serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
-
-
+            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
 
         }
-        ThisThread::sleep_for(5s);
+        ThisThread::sleep_for(1ms);
 
     }
 
@@ -140,9 +138,6 @@ Thread cons;
 
 
 int main() {
-
-
-    serial.printf("Main started\r\n");
 
     // set all the bits so they are turned off
     setbit(SET, GREEN);
@@ -156,11 +151,13 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(interrupt, 1s); // this is frequency for each square wave
+    ticker.attach(interrupt, 300us); // this is frequency for each square wave
 
     while (true) {
 
-        ThisThread::sleep_for(1s);
+        //serial.printf("ticker_count %d\r\n", ticker_count);
+
+        ThisThread::sleep_for(1ms);
 
     }
 
