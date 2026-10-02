@@ -83,19 +83,31 @@ void producer() {
     // array of all the duty cycles
     int duty_cycles[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
 
+    serial.printf("does duty cycle exist %d\r\n", duty_cycles[0]);
+
     // for vanilla we only need 1/3 rate so only add the first 3
     for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
 
         // create space in mempool for each duty cycle
         int *duty = mempool1.try_alloc();
 
+        serial.printf("duty pointer: %d\r\n", *duty);
+
         // the address of duty is equal to the duty cycle number
         *duty = duty_cycles[i];
+
+        serial.printf("duty value: %d\r\n", duty);
+
+        serial.printf("duty_cycle value: %d\r\n", duty_cycles[i]);
 
         // put the value of each pointer for the duty cycle onto the queue
         queue1.try_put(duty);
 
+        //serial.printf("duty cycle num: %d\r\n", duty);
+
     }
+
+    ThisThread::sleep_for(1ms);
 
 }
 
@@ -107,16 +119,22 @@ void vanilla_consumer() {
         int *pwm_ptr;
 
         // point pwm_ptr to the last element in the queue
-        queue1.try_get(&pwm_ptr);
+        if(queue1.try_get_for(1s, &pwm_ptr)) {
 
-        // pwm is the value at the location of pwm_ptr
-        int pwm = *pwm_ptr;
+            // pwm is the value at the location of pwm_ptr
+            int pwm = *pwm_ptr;
 
-        // duty_cycle_frequency is the duty cycle related to the overall
-        // frequency of the pulse width modulation
-        // multiply by 0.01 to make the duty cycles into percentages of the pwm square waves
-        // example: frequency = 100. pwm = 30, so (30 * 0.01) * 100 = 30
-        duty_cycle_frequency = (pwm * 0.01) * period;
+            serial.printf("value of pwm: %d\r\n", pwm);
+
+            // duty_cycle_frequency is the duty cycle related to the overall
+            // frequency of the pulse width modulation
+            // multiply by 0.01 to make the duty cycles into percentages of the pwm square waves
+            // example: frequency = 100. pwm = 30, so (30 * 0.01) * 100 = 30
+            duty_cycle_frequency = (pwm * 0.01) * period;
+
+            serial.printf("duty cycle frequency: %d\r\n", duty_cycle_frequency);
+
+        }
 
     }
 
@@ -127,6 +145,9 @@ Thread cons;
 
 
 int main() {
+
+
+    serial.printf("Main started\r\n");
 
     // set all the bits so they are turned off
     setbit(SET, GREEN);
@@ -140,7 +161,7 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(&interrupt, 1us); // this is frequency for each square wave
+    ticker.attach(interrupt, 100us); // this is frequency for each square wave
 
     while (true) {
 
