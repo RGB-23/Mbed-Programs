@@ -19,7 +19,7 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
-#define DUTY_CYCLE_NUM 3
+#define DUTY_CYCLE_NUM 1
 
 USBSerial serial;
 
@@ -36,7 +36,7 @@ MemoryPool<int, 9> mempool1;
 Ticker ticker;
 
 // frequency for the square wave
-static int period = 100; // in microseconds
+static int period = 500; // in microseconds
 
 // duty cycle associated with the square wave
 int duty_cycle_frequency = 0;
@@ -81,7 +81,7 @@ void interrupt() {
 void producer() {
     
     // array of all the duty cycles
-    int duty_cycles[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
+    int duty_cycles[9] = {50, 100, 150, 200, 250, 300, 350, 400, 450};
 
     // for vanilla we only need 1/3 rate so only add the first 3
     for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
@@ -151,7 +151,7 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(interrupt, 300us); // this is frequency for each square wave
+    ticker.attach(interrupt, 50us); // this is frequency for each square wave
 
     while (true) {
 
