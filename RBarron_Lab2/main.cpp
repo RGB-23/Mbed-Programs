@@ -36,10 +36,10 @@ MemoryPool<int, 9> mempool1;
 Ticker ticker;
 
 // frequency for the square wave
-static float period = 100; // in microseconds
+static int period = 100; // in microseconds
 
 // duty cycle associated with the square wave
-float duty_cycle_frequency = 0;
+int duty_cycle_frequency = 0;
 
 int ticker_count = 0;
 
@@ -83,8 +83,6 @@ void producer() {
     // array of all the duty cycles
     int duty_cycles[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
 
-    serial.printf("does duty cycle exist %d\r\n", duty_cycles[0]);
-
     // for vanilla we only need 1/3 rate so only add the first 3
     for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
 
@@ -96,18 +94,16 @@ void producer() {
         // the address of duty is equal to the duty cycle number
         *duty = duty_cycles[i];
 
-        serial.printf("duty value: %d\r\n", duty);
+        serial.printf("duty value: %d\r\n", *duty);
 
         serial.printf("duty_cycle value: %d\r\n", duty_cycles[i]);
 
         // put the value of each pointer for the duty cycle onto the queue
         queue1.try_put(duty);
 
-        //serial.printf("duty cycle num: %d\r\n", duty);
-
     }
 
-    ThisThread::sleep_for(1ms);
+    ThisThread::sleep_for(5s);
 
 }
 
@@ -121,20 +117,19 @@ void vanilla_consumer() {
         // point pwm_ptr to the last element in the queue
         if(queue1.try_get_for(1s, &pwm_ptr)) {
 
-            // pwm is the value at the location of pwm_ptr
-            int pwm = *pwm_ptr;
+            serial.printf("SUCCESS: got item from queue\r\n");
 
-            serial.printf("value of pwm: %d\r\n", pwm);
+            serial.printf("pwm_ptr address: %p\r\n", pwm_ptr); 
 
-            // duty_cycle_frequency is the duty cycle related to the overall
-            // frequency of the pulse width modulation
-            // multiply by 0.01 to make the duty cycles into percentages of the pwm square waves
-            // example: frequency = 100. pwm = 30, so (30 * 0.01) * 100 = 30
-            duty_cycle_frequency = (pwm * 0.01) * period;
+            serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
 
-            serial.printf("duty cycle frequency: %d\r\n", duty_cycle_frequency);
+
+            // make the global duty_cycle_frequency value
+            // equal to pwm_ptr value so the ticker class can use it
+            duty_cycle_frequency = (*pwm_ptr);
 
         }
+        ThisThread::sleep_for(5s);
 
     }
 
@@ -161,7 +156,7 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(interrupt, 100us); // this is frequency for each square wave
+    ticker.attach(interrupt, 5s); // this is frequency for each square wave
 
     while (true) {
 
