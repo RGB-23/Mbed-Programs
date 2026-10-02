@@ -49,6 +49,10 @@ void interrupt() {
     // count up every time ticker fires
     ticker_count = ticker_count + 1;
 
+    serial.printf("ticker count: %d\r\n", ticker_count);
+
+    serial.printf("duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+
 
     // reset the ticker if it reaches 100 ticks (100 microseconds)
     // so that it resents for the sake of the duty cycle
