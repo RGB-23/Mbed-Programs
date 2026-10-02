@@ -124,8 +124,7 @@ void vanilla_consumer() {
             serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
 
 
-            // make the global duty_cycle_frequency value
-            // equal to pwm_ptr value so the ticker class can use it
+            // set the duty cycle
             duty_cycle_frequency = (*pwm_ptr);
 
         }
