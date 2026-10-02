@@ -92,14 +92,8 @@ void producer() {
         // the address of duty is equal to the duty cycle number
         *duty = duty_cycles[i];
 
-        //serial.printf("duty value: %d\r\n", *duty);
-
-        //serial.printf("duty_cycle value: %d\r\n", duty_cycles[i]);
-
         // put the value of each pointer for the duty cycle onto the queue
         queue1.try_put(duty);
-
-        //serial.printf("HELLO1\r\n");
 
     }
 
@@ -107,10 +101,78 @@ void producer() {
 
 }
 
-void vanilla_consumer() {
+/*void vanilla_consumer() {
 
     while(true) {
             
+        // pointer used get the last element in the queue
+        int *pwm_ptr;
+
+        // point pwm_ptr to the last element in the queue
+        if(queue1.try_get_for(1ms, &pwm_ptr)) {
+
+            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
+
+            // set the duty cycle
+            duty_cycle_frequency = (*pwm_ptr);
+
+            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+
+        }
+        ThisThread::sleep_for(1ms);
+
+    }
+
+}*/
+
+Thread prod;
+Thread cons;
+
+// Part 2A: vanilla consumer
+/*int main() {
+
+    // set all the bits so they are turned off
+    setbit(SET, GREEN);
+    setbit(SET, BLUE);
+    setbit(SET, RED);
+
+    // set the direction of all the colors
+    setbit(DIRSET, GREEN);
+    setbit(DIRSET, BLUE);
+    setbit(DIRSET, RED);
+
+    prod.start(producer);
+    cons.start(vanilla_consumer);
+    ticker.attach(interrupt, 50us); // this is frequency for each square wave
+
+    while (true) {
+
+        //serial.printf("ticker_count %d\r\n", ticker_count);
+
+        ThisThread::sleep_for(1ms);
+
+    }
+
+}*/
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+// create led that is connected to the blue pin
+PwmOut led(P0_6);
+
+
+/*void chocolate_consumer() {
+
+    while(true) {
+        
+
+        period_us(500);
+        
+        
+
         // pointer used get the last element in the queue
         int *pwm_ptr;
 
@@ -131,27 +193,23 @@ void vanilla_consumer() {
 
     }
 
-}
+}*/
 
-Thread prod;
-Thread cons;
-
-// PART 2A: GLOWs at 30%
+// PART 2B: GLOWs at 75% with PWMOut class
 int main() {
 
-    // set all the bits so they are turned off
-    setbit(SET, GREEN);
-    setbit(SET, BLUE);
-    setbit(SET, RED);
 
-    // set the direction of all the colors
-    setbit(DIRSET, GREEN);
-    setbit(DIRSET, BLUE);
-    setbit(DIRSET, RED);
 
-    prod.start(producer);
-    cons.start(vanilla_consumer);
-    ticker.attach(interrupt, 50us); // this is frequency for each square wave
+    //prod.start(producer);
+    //cons.start(vanilla_consumer);
+    //ticker.attach(interrupt, 50us); // this is frequency for each square wave
+
+    // 500 microsecond period
+    led.period_us(500);
+
+    // 75% duty cycle (75% of 500 = 375)
+    led.pulsewidth_us(375);
+
 
     while (true) {
 
