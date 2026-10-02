@@ -49,10 +49,6 @@ void interrupt() {
     // count up every time ticker fires
     ticker_count = ticker_count + 1;
 
-    serial.printf("ticker count: %d\r\n", ticker_count);
-
-    serial.printf("duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
-
 
     // reset the ticker if it reaches 100 ticks (100 microseconds)
     // so that it resents for the sake of the duty cycle
@@ -93,8 +89,6 @@ void producer() {
         // create space in mempool for each duty cycle
         int *duty = mempool1.try_alloc();
 
-        serial.printf("duty pointer: %d\r\n", *duty);
-
         // the address of duty is equal to the duty cycle number
         *duty = duty_cycles[i];
 
@@ -104,6 +98,8 @@ void producer() {
 
         // put the value of each pointer for the duty cycle onto the queue
         queue1.try_put(duty);
+
+        serial.printf("HELLO1\r\n");
 
     }
 
@@ -118,18 +114,19 @@ void vanilla_consumer() {
         // pointer used get the last element in the queue
         int *pwm_ptr;
 
+        serial.printf("HELLO2\r\n");        
+
         // point pwm_ptr to the last element in the queue
         if(queue1.try_get_for(1s, &pwm_ptr)) {
 
-            serial.printf("SUCCESS: got item from queue\r\n");
-
-            serial.printf("pwm_ptr address: %p\r\n", pwm_ptr); 
-
             serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
-
 
             // set the duty cycle
             duty_cycle_frequency = (*pwm_ptr);
+
+            serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+
+
 
         }
         ThisThread::sleep_for(5s);
@@ -159,7 +156,7 @@ int main() {
 
     prod.start(producer);
     cons.start(vanilla_consumer);
-    ticker.attach(interrupt, 5s); // this is frequency for each square wave
+    ticker.attach(interrupt, 1s); // this is frequency for each square wave
 
     while (true) {
 
