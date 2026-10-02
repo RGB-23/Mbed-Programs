@@ -19,7 +19,7 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
-#define DUTY_CYCLE_NUM 1
+#define DUTY_CYCLE_NUM 3
 
 USBSerial serial;
 
@@ -136,7 +136,7 @@ void vanilla_consumer() {
 Thread prod;
 Thread cons;
 
-
+// PART 2A: GLOWs at 30%
 int main() {
 
     // set all the bits so they are turned off
