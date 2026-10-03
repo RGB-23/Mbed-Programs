@@ -19,6 +19,24 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
+// base address for PWM0
+#define PWM0 (NRF_PWM_Type *)(0x4001C000)
+
+// output pin for PWM0 channel
+#define OUTPUT_PIN (uint32_t *)(0x4001C560)
+// the enable register for PWM0
+#define ENABLE (uint32_t *)(0x4001C500)
+// period of the square wave
+#define COUNTERTOP (uint32_t *)(0x4001C508)
+// period of the square wave
+#define PRESCALER (uint32_t *)(0x4001C50C)
+// start the sequence (start runing)
+#define SEQSTART0 (uint32_t *)(0x4001C008)
+// duty cycles in the sequence
+#define SEQCNT (uint32_t *)(0x4001C524)
+// stores pointer to the duty cycle value
+#define SEQPTR (uint32_t *)(0x4001C520)
+
 // number to determine how far up the duty cycle array the
 // producer should go for determining brightnes
 #define DUTY_CYCLE_NUM 5
@@ -166,6 +184,11 @@ Thread cons;
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
+
+//PART 2B
+
+/*
+
 // create led that is connected to the blue pin
 PwmOut led(P0_6);
 
@@ -214,13 +237,18 @@ int main() {
 
 }
 
+*/
+
+
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
-/*
+
+// PART 2C
+
 //STRAWBERRY CONSUMER
-void strawberry_consumer() {
+/*void strawberry_consumer() {
 
     while(true) {
             
@@ -242,32 +270,40 @@ void strawberry_consumer() {
 
     }
 
-}
+}*/
 
+uint16_t pwm_value = 0;
 
 //PART 2C: main for strawberry consumer
 int main() {
 
-    prod.start(producer);
+    //prod.start(producer);
 
-    nrf_pwm_enable();
+    // enable the PWM0 unit
+    //nrf_pwm_enable(PWM0);
 
-    if(nrf_pwm_enable_check()) {
+    // put 24 into the output pin register
+    // 24 is the pin number for the red LED
+    *OUTPUT_PIN = 24;
 
+    *SEQCNT = 1;
 
-        serial.printf("success");
+    *SEQPTR = (uint32_t)&pwm_value;
 
+    
+    // how fast countertop should count
+    // 7 corresponds to 125 kHz
+    *PRESCALER = 7;
 
-    }
+    // period
+    *COUNTERTOP = 1000;
 
-    else{
+    
 
-        serial.printf("fail");
-        
-    }
+    nrf_pwm_enable(PWM0);
 
-
-
+    // start the pwm
+    *SEQSTART0  = 1;
 
     while (true) {
 
@@ -276,4 +312,3 @@ int main() {
     }
 
 }
-*/
