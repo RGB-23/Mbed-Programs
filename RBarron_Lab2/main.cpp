@@ -21,7 +21,7 @@ ADD COMMENTS
 
 // number to determine how far up the duty cycle array the
 // producer should go for determining brightnes
-#define DUTY_CYCLE_NUM 7
+#define DUTY_CYCLE_NUM 5
 
 USBSerial serial;
 
@@ -83,7 +83,7 @@ void interrupt() {
 void producer() {
     
     // array of all the duty cycles
-    int duty_cycles[9] = {50, 100, 150, 200, 250, 300, 350, 400, 450};
+    float duty_cycles[9] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
 
     // for vanilla we only need 1/3 rate so only add the first 3
     for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
@@ -169,11 +169,13 @@ Thread cons;
 // create led that is connected to the blue pin
 PwmOut led(P0_6);
 
-/* CHOCOLATE CONSUMER
+// CHOCOLATE CONSUMER
 void chocolate_consumer() {
 
-    while(true) {       
-        
+    // 500 microsecond period
+    led.period_us(500);
+
+    while(true) {
 
         // pointer used get the last element in the queue
         int *pwm_ptr;
@@ -184,11 +186,11 @@ void chocolate_consumer() {
         if(queue1.try_get_for(1ms, &pwm_ptr)) {
 
             //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
+            
+            // set the duty cycle frequency
+            led.pulsewidth_us(*pwm_ptr);
 
-            // set the duty cycle
-            duty_cycle_frequency = (*pwm_ptr);
-
-            serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
 
         }
         ThisThread::sleep_for(1ms);
@@ -196,26 +198,82 @@ void chocolate_consumer() {
     }
 
 }
-*/
+
 // PART 2B: main for chocolate consumer
 int main() {
 
     prod.start(producer);
     cons.start(chocolate_consumer);
 
-    // 500 microsecond period
-    led.period_us(500);
-
-    // 75% duty cycle
-    led.pulsewidth_us(duty_cycle_frequency);
-
 
     while (true) {
-
-        //serial.printf("ticker_count %d\r\n", ticker_count);
 
         ThisThread::sleep_for(1ms);
 
     }
 
 }
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+/*
+//STRAWBERRY CONSUMER
+void strawberry_consumer() {
+
+    while(true) {
+            
+        // pointer used get the last element in the queue
+        int *pwm_ptr;
+
+        // point pwm_ptr to the last element in the queue
+        if(queue1.try_get_for(1ms, &pwm_ptr)) {
+
+            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
+
+            // set the duty cycle
+            duty_cycle_frequency = (*pwm_ptr);
+
+            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+
+        }
+        ThisThread::sleep_for(1ms);
+
+    }
+
+}
+
+
+//PART 2C: main for strawberry consumer
+int main() {
+
+    prod.start(producer);
+
+    nrf_pwm_enable();
+
+    if(nrf_pwm_enable_check()) {
+
+
+        serial.printf("success");
+
+
+    }
+
+    else{
+
+        serial.printf("fail");
+        
+    }
+
+
+
+
+    while (true) {
+
+        ThisThread::sleep_for(1ms);
+
+    }
+
+}
+*/
