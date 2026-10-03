@@ -19,7 +19,7 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
-#define DUTY_CYCLE_NUM 3
+#define DUTY_CYCLE_NUM 7
 
 USBSerial serial;
 
@@ -164,13 +164,9 @@ Thread cons;
 PwmOut led(P0_6);
 
 
-/*void chocolate_consumer() {
+void chocolate_consumer() {
 
-    while(true) {
-        
-
-        period_us(500);
-        
+    while(true) {       
         
 
         // pointer used get the last element in the queue
@@ -193,22 +189,20 @@ PwmOut led(P0_6);
 
     }
 
-}*/
+}
 
 // PART 2B: GLOWs at 75% with PWMOut class
 int main() {
 
-
-
     //prod.start(producer);
-    //cons.start(vanilla_consumer);
+    //cons.start(chocolate_consumer);
     //ticker.attach(interrupt, 50us); // this is frequency for each square wave
 
     // 500 microsecond period
     led.period_us(500);
 
     // 75% duty cycle (75% of 500 = 375)
-    led.pulsewidth_us(375);
+    led.pulsewidth_us(duty_cycle_frequency);
 
 
     while (true) {
