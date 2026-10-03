@@ -19,6 +19,8 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
+// number to determine how far up the duty cycle array the
+// producer should go for determining brightnes
 #define DUTY_CYCLE_NUM 7
 
 USBSerial serial;
@@ -101,7 +103,8 @@ void producer() {
 
 }
 
-/*void vanilla_consumer() {
+/* VANILLA CONSUMER
+void vanilla_consumer() {
 
     while(true) {
             
@@ -125,10 +128,13 @@ void producer() {
 
 }*/
 
+// create thread for producer
 Thread prod;
+
+// create thread used for vanilla and chocolate
 Thread cons;
 
-// Part 2A: vanilla consumer
+// Part 2A: main for vanilla consumer
 /*int main() {
 
     // set all the bits so they are turned off
@@ -163,7 +169,7 @@ Thread cons;
 // create led that is connected to the blue pin
 PwmOut led(P0_6);
 
-
+/* CHOCOLATE CONSUMER
 void chocolate_consumer() {
 
     while(true) {       
@@ -182,7 +188,7 @@ void chocolate_consumer() {
             // set the duty cycle
             duty_cycle_frequency = (*pwm_ptr);
 
-            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+            serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
 
         }
         ThisThread::sleep_for(1ms);
@@ -190,18 +196,17 @@ void chocolate_consumer() {
     }
 
 }
-
-// PART 2B: GLOWs at 75% with PWMOut class
+*/
+// PART 2B: main for chocolate consumer
 int main() {
 
-    //prod.start(producer);
-    //cons.start(chocolate_consumer);
-    //ticker.attach(interrupt, 50us); // this is frequency for each square wave
+    prod.start(producer);
+    cons.start(chocolate_consumer);
 
     // 500 microsecond period
     led.period_us(500);
 
-    // 75% duty cycle (75% of 500 = 375)
+    // 75% duty cycle
     led.pulsewidth_us(duty_cycle_frequency);
 
 
