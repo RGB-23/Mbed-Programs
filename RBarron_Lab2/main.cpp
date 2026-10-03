@@ -36,6 +36,9 @@ ADD COMMENTS
 #define SEQCNT (uint32_t *)(0x4001C524)
 // stores pointer to the duty cycle value
 #define SEQPTR (uint32_t *)(0x4001C520)
+// stores pointer to the duty cycle value
+#define PSELOUT0 (uint32_t *)(0x4001C560)
+
 
 // number to determine how far up the duty cycle array the
 // producer should go for determining brightnes
@@ -272,38 +275,93 @@ int main() {
 
 }*/
 
-uint16_t pwm_value = 0;
+
 
 //PART 2C: main for strawberry consumer
 int main() {
+
+
+    uint16_t pwm_value = 500;
+    serial.printf("pwm_value = %u\r\n", pwm_value);
+
+    // nrf_pwm_sequence_t is a struct for sequence
+    // values within the sequence struct are for setting the sequence
+    nrf_pwm_sequence_t sequence;
+
+    // address of pwm value
+    sequence.values.p_raw = &pwm_value;
+    // how many pwm values
+    sequence.length = 1;
+    // how 
+    sequence.repeats = 0;
+    sequence.end_delay = 0;
 
     //prod.start(producer);
 
     // enable the PWM0 unit
     //nrf_pwm_enable(PWM0);
 
+    // set the direction of all the colors
+    setbit(DIRSET, GREEN);
+    setbit(DIRSET, BLUE);
+    setbit(DIRSET, RED);
+
+    // Turn red LED on
+    setbit(SET, RED);
+    setbit(SET, GREEN);
+    setbit(SET, BLUE);
+
+
     // put 24 into the output pin register
     // 24 is the pin number for the red LED
-    *OUTPUT_PIN = 24;
+    //*OUTPUT_PIN = 24;
 
-    *SEQCNT = 1;
+    //*SEQCNT = 1;
 
-    *SEQPTR = (uint32_t)&pwm_value;
+    //*SEQPTR = (uint32_t)&pwm_value;
 
     
     // how fast countertop should count
     // 7 corresponds to 125 kHz
-    *PRESCALER = 7;
+    //*PRESCALER = 7; // done with configure
 
     // period
-    *COUNTERTOP = 1000;
+    //*COUNTERTOP = 1000; // done with
 
+ 
+
+    // conncects the red LED to PWM0
+    uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
+
+
+
+    nrf_pwm_pins_set(PWM0, out_pins);
+
+
+
+    // select pWM unit, speed of counting, direction of counting, and what to count to 
+    nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 1000);
     
 
+
+    nrf_pwm_sequence_set(PWM0, 0, &sequence);
+
+    serial.printf("space\r\n");
+
+    serial.printf("Starting PWM\r\n");
+    serial.printf("pwm_value = %u\r\n", pwm_value);
+
     nrf_pwm_enable(PWM0);
+    serial.printf("ENABLE = %lu\r\n", *ENABLE);
+
+    // starts the the sequence
+    nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+    serial.printf("PTR = %lu\r\n", *SEQPTR);
+    serial.printf("CNT = %lu\r\n", *SEQCNT);
+    serial.printf("PSEL = %lu\r\n", *PSELOUT0);
 
     // start the pwm
-    *SEQSTART0  = 1;
+    //*SEQSTART0  = 1;
 
     while (true) {
 
