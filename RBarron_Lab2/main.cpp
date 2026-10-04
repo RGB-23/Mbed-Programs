@@ -117,6 +117,8 @@ void interrupt() {
 
 
 // producer thread for pushing new duty cycles onto the queue
+// commented out right now so it doesn't conflict with part 3
+/*
 void producer() {
     
     // array of all the duty cycles
@@ -176,6 +178,17 @@ void producer() {
     }
 
 }
+*/
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+// PART 2A
+
+/* this comment out connect to line 253
 
 // VANILLA CONSUMER
 void vanilla_consumer() {
@@ -211,7 +224,7 @@ Thread prod;
 Thread cons;
 
 // Part 2A: main for vanilla consumer
-/*int main() {
+int main() {
 
     // set all the bits so they are turned off
     setbit(SET, GREEN);
@@ -237,17 +250,20 @@ Thread cons;
 
     }
 
-} */
+}
+
+
+*/ //this comment out connect to line 188
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
-
-
 
 
 // PART 2B: chocolate
+
+/* this comment out connects to line 304
 
 
 // create led that is connected to the blue pin
@@ -287,7 +303,7 @@ void chocolate_consumer() {
 }
 
 // PART 2B: main for chocolate consumer
-/*int main() {
+int main() {
 
     prod.start(producer);
     cons.start(chocolate_consumer);
@@ -299,15 +315,17 @@ void chocolate_consumer() {
 
     }
 
-} */
+}
 
-
+*/ //this comment out connects to line 250
 
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
+
+/* this comment out connects to line 435
 
 // PART 2C
 
@@ -429,4 +447,288 @@ int main() {
     }
 
 }
+
+*/ //this comment out connects to line 312
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+// PART 3
+
+
+Queue<int, 9> vanilla_queue;
+Queue<int, 9> chocolate_queue;
+Queue<int, 9> strawberry_queue;
+
+MemoryPool<int, 9> vanilla_mempool;
+MemoryPool<int, 9> chocolate_mempool;
+MemoryPool<int, 9> strawberry_mempool;
+
+
+Thread prod;
+Thread vanilla;
+Thread chocolate;
+Thread strawberry;
+
+// used for chocolate
+PwmOut led(P0_6);
+
+
+void producer() {
+    
+    // array of all the duty cycles
+    int duty_cycles[DUTY_CYCLE_NUM] = {0};
+
+    // put 0-100 into duty_cycles array
+    for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
+
+        duty_cycles[i] = i;
+
+    }
+
+    while (true) {
+    
+        // get the LED to glow up
+        for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
+
+            // create space in mempool for each duty cycle
+            int *vanilla_duty = vanilla_mempool.try_alloc();
+            int *chocolate_duty = chocolate_mempool.try_alloc();
+            int *strawberry_duty = strawberry_mempool.try_alloc();
+
+            // check that duty actually points at something
+            if((vanilla_duty != nullptr) && (chocolate_duty != nullptr) && (strawberry_duty != nullptr)) {
+                
+                // the value of duty is equal to the value at the array
+                *vanilla_duty = duty_cycles[i];
+                *chocolate_duty = duty_cycles[i];
+                *strawberry_duty = duty_cycles[i];
+
+                // put the value of each pointer for the duty cycle onto the queue
+                vanilla_queue.try_put(vanilla_duty);
+                chocolate_queue.try_put(chocolate_duty);
+                strawberry_queue.try_put(strawberry_duty);
+
+            }
+
+            ThisThread::sleep_for(10ms);
+
+        }
+
+        // get the LED to diminsih glow
+        for(int i = (DUTY_CYCLE_NUM - 1); i >= 0; i--) {
+
+            // create space in mempool for each duty cycle
+            int *vanilla_duty = vanilla_mempool.try_alloc();
+            int *chocolate_duty = chocolate_mempool.try_alloc();
+            int *strawberry_duty = strawberry_mempool.try_alloc();
+
+            // check that duty actually points at something
+            if((vanilla_duty != nullptr) && (chocolate_duty != nullptr) && (strawberry_duty != nullptr)) {
+                
+                // the value of duty is equal to the value at the array
+                *vanilla_duty = duty_cycles[i];
+                *chocolate_duty = duty_cycles[i];
+                *strawberry_duty = duty_cycles[i];
+
+                // put the value of each pointer for the duty cycle onto the queue
+                vanilla_queue.try_put(vanilla_duty);
+                chocolate_queue.try_put(chocolate_duty);
+                strawberry_queue.try_put(strawberry_duty);
+
+            }
+
+            ThisThread::sleep_for(10ms);
+
+        }
+
+    }
+
+}
+
+
+void vanilla_consumer() {
+
+    while(true) {
+            
+        // pointer used get the last element in the queue
+        int *pwm_ptr;
+
+        // point pwm_ptr to the last element in the queue
+        if(vainlla_queue.try_get_for(1ms, &pwm_ptr)) {
+
+            
+            // set the duty cycle. period is 500
+            // so multiplt everything by 5
+            // divide by 3 to only keep on 1/3 brightness
+            duty_cycle_frequency = (*pwm_ptr) * 5 / 3;
+
+            // free the pointer so mempool doesn't get overrun
+            vanilla_mempool.free(pwm_ptr);
+
+        }
+        ThisThread::sleep_for(1ms);
+
+    }
+
+}
+
+void chocolate_consumer() {
+
+    // 500 microsecond period
+    led.period_us(500);
+
+    while(true) {
+
+        // pointer used get the last element in the queue
+        int *pwm_ptr;
+
+        //serial.printf("HELLO2\r\n");        
+
+        // point pwm_ptr to the last element in the queue
+        if(chocolate_queue.try_get_for(1ms, &pwm_ptr)) {
+
+            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
+            
+            // set the duty cycle frequency
+            // have to convert 0-100 duty cycles into 0-375 cause
+            // 375 is 75% brightness of 500 total period
+            led.pulsewidth_us((*pwm_ptr) * 375 / 100);
+
+            // free the pointer so mempool doesn't get overrun
+            chocolate_mempool.free(pwm_ptr);
+
+        }
+        ThisThread::sleep_for(1ms);
+
+    }
+
+}
+
+void strawberry_consumer() {
+
+    // pwm_sequence used for getting the LED to glow
+    uint16_t pwm_sequence[1];
+
+    // nrf_pwm_sequence_t is a struct for sequence
+    // values within the sequence struct are for setting the sequence
+    nrf_pwm_sequence_t sequence;  
+
+    // address of pwm_sequence
+    sequence.values.p_common = pwm_sequence;
+
+    // take only one pwm value at a time
+    sequence.length = 1;
+
+    // don't let the cycle repeat
+    sequence.repeats = 0;
+
+    // no delay for the pwm
+    sequence.end_delay = 0;
+
+    int index = 0;
+
+    // increase glow
+    for(int i = 0; i <= duty_cycle_frequency; i++) {
+    pwm_sequence[index] = i;
+    index = index + 1;
+    }
+    // decrease glow
+    for(int i = duty_cycle_frequency - 1; i >= 0; i--) {
+        pwm_sequence[index] = i;
+        index = index + 1;
+    }
+
+    // conncects the red LED to PWM0
+    uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
+
+    // set the sequence
+    nrf_pwm_sequence_set(PWM0, 0, &sequence);
+
+
+    // set up the pins to the PWM0 channel
+    nrf_pwm_pins_set(PWM0, out_pins);
+
+    // select PWM unit, speed of counting, direction of counting, and what to count to 
+    nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 500);
+
+    // set the decoder to interpret the values in the sequence array
+    nrf_pwm_decoder_set(PWM0, NRF_PWM_LOAD_COMMON, NRF_PWM_STEP_AUTO);
+
+    // enable PWM0 so it's on
+    nrf_pwm_enable(PWM0);
+
+    // LED off to start (duty cycle = 0)
+    pwm_sequence[0] = 0;
+
+    // set the sequence
+    nrf_pwm_sequence_set(PWM0, 0, &sequence);
+
+    // clear pwm to reset it
+    nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
+
+    // activate PWM0 and start the sequence again
+    nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+
+
+    while (true) {
+
+        int *pwm_ptr;
+
+        // point pwm_ptr to the last element in the queue
+        if(strawberry_queue.try_get_for(1ms, &pwm_ptr)) {
+
+            // set the duty cycle and scale to fit the 500us period
+            // and 0-100 duty cycle range
+            duty_cycle_frequency = (*pwm_ptr) * 250 / 100;
+
+            // update the duty cycle value with new value
+            pwm_sequence[0] = duty_cycle_frequency;
+
+            // set the sequence with the new duty cycle value
+            nrf_pwm_sequence_set(PWM0, 0, &sequence);
+
+            // activate PWM0 and start the sequence again
+            // with new duty cycle value
+            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+
+            // free the pointer so mempool doesn't get overrun
+            strawberry_mempool.free(pwm_ptr);
+        }
+
+        ThisThread::sleep_for(1ms);
+        
+    }
+
+}
+
+
+
+int main() {
+
+    // clear all the LEDs
+    setbit(SET, GREEN);
+    setbit(SET, BLUE);
+    setbit(SET, RED);
+
+    // set the direction of the LEDs
+    setbit(DIRSET, GREEN);
+    setbit(DIRSET, BLUE);
+    setbit(DIRSET, RED);
+
+    prod.start(producer);
+    vanilla.start(vanilla_consumer);
+    chocolate.start(chocolate_consumer);
+    strawberry.start(strawberry_consumer);
+    
+
+    while (true) {
+
+        ThisThread::sleep_for(1ms);
+    }
+
+}
+
 
