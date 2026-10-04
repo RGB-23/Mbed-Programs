@@ -52,7 +52,7 @@ ADD COMMENTS
 
 // number to determine how far up the duty cycle array the
 // producer should go for determining brightnes
-#define DUTY_CYCLE_NUM 501
+#define DUTY_CYCLE_NUM 375
 
 USBSerial serial;
 
@@ -207,7 +207,7 @@ Thread prod;
 Thread cons;
 
 // Part 2A: main for vanilla consumer
-int main() {
+/*int main() {
 
     // set all the bits so they are turned off
     setbit(SET, GREEN);
@@ -233,17 +233,18 @@ int main() {
 
     }
 
-}
+} */
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
-
-
-//PART 2B
 
 /*
+
+
+// PART 2B: chocolate
+
 
 // create led that is connected to the blue pin
 PwmOut led(P0_6);
@@ -269,7 +270,8 @@ void chocolate_consumer() {
             // set the duty cycle frequency
             led.pulsewidth_us(*pwm_ptr);
 
-            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+            // free the pointer so mempool doesn't get overrun
+            mempool1.free(pwm_ptr);
 
         }
         ThisThread::sleep_for(1ms);
@@ -304,7 +306,7 @@ int main() {
 // PART 2C
 
 //STRAWBERRY CONSUMER
-/*void strawberry_consumer() {
+void strawberry_consumer() {
 
     while(true) {
             
@@ -326,12 +328,12 @@ int main() {
 
     }
 
-}*/
+}
 
 
 
 //PART 2C: main for strawberry consumer
-/*int main() {
+int main() {
 
 
     uint16_t pwm_sequence[100];
@@ -369,7 +371,7 @@ int main() {
     nrf_pwm_pins_set(PWM0, out_pins);
 
     // select PWM unit, speed of counting, direction of counting, and what to count to 
-    nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 1000);
+    nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 500);
     
 
     // set the sequence
@@ -415,5 +417,3 @@ int main() {
     }
 
 }
-
-*/
