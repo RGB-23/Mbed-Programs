@@ -152,7 +152,7 @@ void producer() {
 
         }
 
-        // get the LED to fade out
+        // get the LED to diminsih glow
         for(int i = (DUTY_CYCLE_NUM - 1); i >= 0; i--) {
 
             // create space in mempool for each duty cycle
@@ -314,10 +314,23 @@ void chocolate_consumer() {
 //STRAWBERRY CONSUMER
 void strawberry_consumer() {
 
-    // pwm_sequence used for getting the LED to fade in and out
+    // pwm_sequence used for getting the LED to glow
     // period is 500 so 1st half goes up to 500 and 2nd half of
     // array goes back down to 0
     uint16_t pwm_sequence[1000];
+
+    int index = 0;
+
+    // increase glow
+    for(int i = 0; i <= duty_cycle_frequency; i++) {
+    pwm_sequence[index] = i;
+    index = index + 1;
+    }
+    // decrease glow
+    for(int i = duty_cycle_frequency - 1; i >= 0; i--) {
+        pwm_sequence[index] = i;
+        index = index + 1;
+    }
 
     // nrf_pwm_sequence_t is a struct for sequence
     // values within the sequence struct are for setting the sequence
@@ -331,8 +344,12 @@ void strawberry_consumer() {
     sequence.repeats = 0;
     sequence.end_delay = 0;
 
+    // set the sequence
+    nrf_pwm_sequence_set(PWM0, 0, &sequence);
+
     // conncects the red LED to PWM0
     uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
+
 
     // set up the pins to the PWM0 channel
     nrf_pwm_pins_set(PWM0, out_pins);
@@ -346,12 +363,26 @@ void strawberry_consumer() {
     // enable PWM0 so it's on
     nrf_pwm_enable(PWM0);
 
-    // clear pwm so it lights up
+    // clear pwm to reset it
     nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
 
+    // activate PWM0 and start the sequence again
+    nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
 
 
     while (true) {
+
+        // has the sequence ended?
+        if (nrf_pwm_event_check(PWM0, NRF_PWM_EVENT_SEQEND0)) {
+
+            // clear the event to reset it
+            nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
+
+            // activate PWM0 and start the sequence again
+            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+        }
+        
+
 
         // pointer used get the last element in the queue
         int *pwm_ptr;
@@ -366,41 +397,6 @@ void strawberry_consumer() {
             // free the pointer so mempool doesn't get overrun
             mempool1.free(pwm_ptr);
 
-            int index = 0;
-
-            // glow
-            for(int i = 0; i < duty_cycle_frequency; i++) {
-            pwm_sequence[index] = i;
-            index = index + 1;
-            }
-            // fade
-            for(int i = duty_cycle_frequency - 1; i >= 0; i--) {
-                pwm_sequence[index] = i;
-                index = index + 1;
-            }
-
-            sequence.length = index;
-
-            // update the sequence since we got a new length
-            nrf_pwm_sequence_set(PWM0, 0, &sequence);
-
-            // clear the old sequence
-            nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
-
-            // activate PWM0 and start the sequence again
-            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
-
-
-        }
-
-        // has the sequence ended?
-        if (nrf_pwm_event_check(PWM0, NRF_PWM_EVENT_SEQEND0)) {
-
-            // clear the event to reset it
-            nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
-
-            // activate PWM0 and start the sequence again
-            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
         }
 
         ThisThread::sleep_for(1ms);
