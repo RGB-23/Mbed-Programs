@@ -52,7 +52,7 @@ ADD COMMENTS
 
 // number to determine how far up the duty cycle array the
 // producer should go for determining brightnes
-#define DUTY_CYCLE_NUM 375
+#define DUTY_CYCLE_NUM 101
 
 USBSerial serial;
 
@@ -122,7 +122,7 @@ void producer() {
     // array of all the duty cycles
     int duty_cycles[DUTY_CYCLE_NUM] = {0};
 
-    // put values 0-100 into duty_cycles array
+    // put 0-100 into duty_cycles array
     for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
 
         duty_cycles[i] = i;
@@ -131,15 +131,16 @@ void producer() {
 
     while (true) {
     
-        // for vanilla we only need 1/3 rate so only add the first 3
+        // get the LED to glow up
         for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
 
             // create space in mempool for each duty cycle
             int *duty = mempool1.try_alloc();
 
-            // the address of duty is equal to the duty cycle number
+            // check that duty actually points at something
             if(duty != nullptr) {
                 
+                // the value of duty is equal to the value at the array
                 *duty = duty_cycles[i];
 
                 // put the value of each pointer for the duty cycle onto the queue
@@ -151,14 +152,16 @@ void producer() {
 
         }
 
-    for(int i = 100; i >= 0; i--) {
+        // get the LED to fade out
+        for(int i = (DUTY_CYCLE_NUM - 1); i >= 0; i--) {
 
             // create space in mempool for each duty cycle
             int *duty = mempool1.try_alloc();
 
-            // the address of duty is equal to the duty cycle number
+            // check that duty actually points at something
             if(duty != nullptr) {
                 
+                // the value of duty is equal to the value at the array
                 *duty = duty_cycles[i];
 
                 // put the value of each pointer for the duty cycle onto the queue
@@ -185,10 +188,11 @@ void vanilla_consumer() {
         // point pwm_ptr to the last element in the queue
         if(queue1.try_get_for(1ms, &pwm_ptr)) {
 
-            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
-
-            // set the duty cycle
-            duty_cycle_frequency = (*pwm_ptr);
+            
+            // set the duty cycle. period is 500
+            // so multiplt everything by 5
+            // divide by 3 to only keep on 1/3 brightness
+            duty_cycle_frequency = (*pwm_ptr) * 5 / 3;
 
             // free the pointer so mempool doesn't get overrun
             mempool1.free(pwm_ptr);
@@ -240,7 +244,7 @@ Thread cons;
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
-/*
+
 
 
 // PART 2B: chocolate
@@ -268,7 +272,9 @@ void chocolate_consumer() {
             //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
             
             // set the duty cycle frequency
-            led.pulsewidth_us(*pwm_ptr);
+            // have to convert 0-100 duty cycles into 0-375 cause
+            // 375 is 75% brightness of 500 total period
+            led.pulsewidth_us((*pwm_ptr) * 375 / 100);
 
             // free the pointer so mempool doesn't get overrun
             mempool1.free(pwm_ptr);
@@ -281,7 +287,7 @@ void chocolate_consumer() {
 }
 
 // PART 2B: main for chocolate consumer
-int main() {
+/*int main() {
 
     prod.start(producer);
     cons.start(chocolate_consumer);
@@ -293,9 +299,9 @@ int main() {
 
     }
 
-}
+} */
 
-*/
+
 
 
 //////////////////////////////////////////////////////////////////
@@ -308,56 +314,19 @@ int main() {
 //STRAWBERRY CONSUMER
 void strawberry_consumer() {
 
-    while(true) {
-            
-        // pointer used get the last element in the queue
-        int *pwm_ptr;
-
-        // point pwm_ptr to the last element in the queue
-        if(queue1.try_get_for(1ms, &pwm_ptr)) {
-
-            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
-
-            // set the duty cycle
-            duty_cycle_frequency = (*pwm_ptr);
-
-            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
-
-        }
-        ThisThread::sleep_for(1ms);
-
-    }
-
-}
-
-
-
-//PART 2C: main for strawberry consumer
-int main() {
-
-
-    uint16_t pwm_sequence[100];
-
-    int index = 0;
-
-    for(int i = 0; i < 50; i++) {
-        pwm_sequence[index++] = i;
-    }
-
-    for(int i = 49; i >= 0; i--) {
-        pwm_sequence[index++] = i;
-    }
-
-
+    // pwm_sequence used for getting the LED to fade in and out
+    // period is 500 so 1st half goes up to 500 and 2nd half of
+    // array goes back down to 0
+    uint16_t pwm_sequence[1000];
 
     // nrf_pwm_sequence_t is a struct for sequence
     // values within the sequence struct are for setting the sequence
-    nrf_pwm_sequence_t sequence;
+    nrf_pwm_sequence_t sequence;  
 
-    // address of pwm value
+    // address of pwm_sequence
     sequence.values.p_common = pwm_sequence;
     // how many pwm values
-    sequence.length = 100;
+    sequence.length = 1000;
     // how 
     sequence.repeats = 0;
     sequence.end_delay = 0;
@@ -365,17 +334,11 @@ int main() {
     // conncects the red LED to PWM0
     uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
 
-
-
-
+    // set up the pins to the PWM0 channel
     nrf_pwm_pins_set(PWM0, out_pins);
 
     // select PWM unit, speed of counting, direction of counting, and what to count to 
     nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 500);
-    
-
-    // set the sequence
-    nrf_pwm_sequence_set(PWM0, 0, &sequence);
 
     // set the decoder to interpret the values in the sequence array
     nrf_pwm_decoder_set(PWM0, NRF_PWM_LOAD_COMMON, NRF_PWM_STEP_AUTO);
@@ -386,34 +349,84 @@ int main() {
     // clear pwm so it lights up
     nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
 
-    nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+
 
     while (true) {
 
-    if (nrf_pwm_event_check(
-            PWM0,
-            NRF_PWM_EVENT_SEQEND0))
-    {
-        nrf_pwm_event_clear(
-            PWM0,
-            NRF_PWM_EVENT_SEQEND0
-        );
+        // pointer used get the last element in the queue
+        int *pwm_ptr;
 
-        nrf_pwm_task_trigger(
-            PWM0,
-            NRF_PWM_TASK_SEQSTART0
-        );
+        // point pwm_ptr to the last element in the queue
+        if(queue1.try_get_for(1ms, &pwm_ptr)) {
+
+            // set the duty cycle and scale to fit the 500us period
+            // and 0-100 duty cycle range
+            duty_cycle_frequency = (*pwm_ptr) * 250 / 100;
+
+            // free the pointer so mempool doesn't get overrun
+            mempool1.free(pwm_ptr);
+
+            int index = 0;
+
+            // glow
+            for(int i = 0; i < duty_cycle_frequency; i++) {
+            pwm_sequence[index] = i;
+            index = index + 1;
+            }
+            // fade
+            for(int i = duty_cycle_frequency - 1; i >= 0; i--) {
+                pwm_sequence[index] = i;
+                index = index + 1;
+            }
+
+            sequence.length = index;
+
+            // update the sequence since we got a new length
+            nrf_pwm_sequence_set(PWM0, 0, &sequence);
+
+            // clear the old sequence
+            nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
+
+            // activate PWM0 and start the sequence again
+            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+
+
+        }
+
+        // has the sequence ended?
+        if (nrf_pwm_event_check(PWM0, NRF_PWM_EVENT_SEQEND0)) {
+
+            // clear the event to reset it
+            nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
+
+            // activate PWM0 and start the sequence again
+            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+        }
+
+        ThisThread::sleep_for(1ms);
+        
     }
 
-    ThisThread::sleep_for(1ms);
 }
 
 
 
+//PART 2C: main for strawberry consumer
+int main() {
+
+    // clear all the LEDs
+    setbit(SET, GREEN);
+    setbit(SET, BLUE);
+    setbit(SET, RED);
+
+
+    prod.start(producer);
+    cons.start(strawberry_consumer);
+    
+
     while (true) {
 
-        ThisThread::sleep_for(500ms);
-
+        ThisThread::sleep_for(1ms);
     }
 
 }
