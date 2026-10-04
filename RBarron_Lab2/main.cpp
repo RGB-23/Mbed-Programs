@@ -19,6 +19,9 @@ ADD COMMENTS
 #define BLUE (uint8_t)6
 #define RED (uint8_t)24
 
+// used for o-scope
+#define OSCOPE (uint8_t)27
+
 // base address for PWM0
 #define PWM0 (NRF_PWM_Type *)(0x4001C000)
 
@@ -38,11 +41,18 @@ ADD COMMENTS
 #define SEQPTR (uint32_t *)(0x4001C520)
 // stores pointer to the duty cycle value
 #define PSELOUT0 (uint32_t *)(0x4001C560)
+// pwm period
+#define EVENTS_PWMPERIODEND (uint32_t *)(0x4001C118)
+#define EVENTS_SEQSTARTED0 (uint32_t *)(0x4001C108)
+#define MODE (uint32_t *)(0x4001C504)
+#define LOOP (uint32_t *)(0x4001C514)
+#define DECODER (uint32_t *)(0x4001C510)
+#define EVENTS_STOPPED (uint32_t *)(0x4001C104)
 
 
 // number to determine how far up the duty cycle array the
 // producer should go for determining brightnes
-#define DUTY_CYCLE_NUM 5
+#define DUTY_CYCLE_NUM 501
 
 USBSerial serial;
 
@@ -82,10 +92,13 @@ void interrupt() {
     }
 
     // turn and keep LED on for however long the duty cycle is
-    else if(ticker_count <= duty_cycle_frequency) {
+    if(ticker_count <= duty_cycle_frequency) {
 
         // turn LED on
         *CLEAR = (0x1 << GREEN);
+
+        // o-scope pin
+        //*CLEAR = (0x1 << OSCOPE);
 
     }
 
@@ -94,6 +107,9 @@ void interrupt() {
 
         // turn LED off
         *SET = (0x1 << GREEN);
+
+        // o-scope pin
+        //*SET = (0x1 << OSCOPE);
 
     }
     
@@ -104,27 +120,61 @@ void interrupt() {
 void producer() {
     
     // array of all the duty cycles
-    float duty_cycles[9] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+    int duty_cycles[DUTY_CYCLE_NUM] = {0};
 
-    // for vanilla we only need 1/3 rate so only add the first 3
+    // put values 0-100 into duty_cycles array
     for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
 
-        // create space in mempool for each duty cycle
-        int *duty = mempool1.try_alloc();
-
-        // the address of duty is equal to the duty cycle number
-        *duty = duty_cycles[i];
-
-        // put the value of each pointer for the duty cycle onto the queue
-        queue1.try_put(duty);
+        duty_cycles[i] = i;
 
     }
 
-    ThisThread::sleep_for(1ms);
+    while (true) {
+    
+        // for vanilla we only need 1/3 rate so only add the first 3
+        for(int i = 0; i < DUTY_CYCLE_NUM; i++) {
+
+            // create space in mempool for each duty cycle
+            int *duty = mempool1.try_alloc();
+
+            // the address of duty is equal to the duty cycle number
+            if(duty != nullptr) {
+                
+                *duty = duty_cycles[i];
+
+                // put the value of each pointer for the duty cycle onto the queue
+                queue1.try_put(duty);
+
+            }
+
+            ThisThread::sleep_for(10ms);
+
+        }
+
+    for(int i = 100; i >= 0; i--) {
+
+            // create space in mempool for each duty cycle
+            int *duty = mempool1.try_alloc();
+
+            // the address of duty is equal to the duty cycle number
+            if(duty != nullptr) {
+                
+                *duty = duty_cycles[i];
+
+                // put the value of each pointer for the duty cycle onto the queue
+                queue1.try_put(duty);
+
+            }
+
+            ThisThread::sleep_for(10ms);
+
+        }
+
+    }
 
 }
 
-/* VANILLA CONSUMER
+// VANILLA CONSUMER
 void vanilla_consumer() {
 
     while(true) {
@@ -140,14 +190,15 @@ void vanilla_consumer() {
             // set the duty cycle
             duty_cycle_frequency = (*pwm_ptr);
 
-            //serial.printf("*duty_cycle_frequency: %d\r\n", duty_cycle_frequency);
+            // free the pointer so mempool doesn't get overrun
+            mempool1.free(pwm_ptr);
 
         }
         ThisThread::sleep_for(1ms);
 
     }
 
-}*/
+}
 
 // create thread for producer
 Thread prod;
@@ -156,17 +207,19 @@ Thread prod;
 Thread cons;
 
 // Part 2A: main for vanilla consumer
-/*int main() {
+int main() {
 
     // set all the bits so they are turned off
     setbit(SET, GREEN);
     setbit(SET, BLUE);
     setbit(SET, RED);
+    //setbit(SET, OSCOPE);
 
     // set the direction of all the colors
     setbit(DIRSET, GREEN);
     setbit(DIRSET, BLUE);
     setbit(DIRSET, RED);
+    setbit(DIRSET, OSCOPE);
 
     prod.start(producer);
     cons.start(vanilla_consumer);
@@ -180,7 +233,7 @@ Thread cons;
 
     }
 
-}*/
+}
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -278,95 +331,89 @@ int main() {
 
 
 //PART 2C: main for strawberry consumer
-int main() {
+/*int main() {
 
 
-    uint16_t pwm_value = 500;
-    serial.printf("pwm_value = %u\r\n", pwm_value);
+    uint16_t pwm_sequence[100];
+
+    int index = 0;
+
+    for(int i = 0; i < 50; i++) {
+        pwm_sequence[index++] = i;
+    }
+
+    for(int i = 49; i >= 0; i--) {
+        pwm_sequence[index++] = i;
+    }
+
+
 
     // nrf_pwm_sequence_t is a struct for sequence
     // values within the sequence struct are for setting the sequence
     nrf_pwm_sequence_t sequence;
 
     // address of pwm value
-    sequence.values.p_raw = &pwm_value;
+    sequence.values.p_common = pwm_sequence;
     // how many pwm values
-    sequence.length = 1;
+    sequence.length = 100;
     // how 
     sequence.repeats = 0;
     sequence.end_delay = 0;
-
-    //prod.start(producer);
-
-    // enable the PWM0 unit
-    //nrf_pwm_enable(PWM0);
-
-    // set the direction of all the colors
-    setbit(DIRSET, GREEN);
-    setbit(DIRSET, BLUE);
-    setbit(DIRSET, RED);
-
-    // Turn red LED on
-    setbit(SET, RED);
-    setbit(SET, GREEN);
-    setbit(SET, BLUE);
-
-
-    // put 24 into the output pin register
-    // 24 is the pin number for the red LED
-    //*OUTPUT_PIN = 24;
-
-    //*SEQCNT = 1;
-
-    //*SEQPTR = (uint32_t)&pwm_value;
-
-    
-    // how fast countertop should count
-    // 7 corresponds to 125 kHz
-    //*PRESCALER = 7; // done with configure
-
-    // period
-    //*COUNTERTOP = 1000; // done with
-
- 
 
     // conncects the red LED to PWM0
     uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
 
 
 
+
     nrf_pwm_pins_set(PWM0, out_pins);
 
-
-
-    // select pWM unit, speed of counting, direction of counting, and what to count to 
+    // select PWM unit, speed of counting, direction of counting, and what to count to 
     nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 1000);
     
 
-
+    // set the sequence
     nrf_pwm_sequence_set(PWM0, 0, &sequence);
 
-    serial.printf("space\r\n");
+    // set the decoder to interpret the values in the sequence array
+    nrf_pwm_decoder_set(PWM0, NRF_PWM_LOAD_COMMON, NRF_PWM_STEP_AUTO);
 
-    serial.printf("Starting PWM\r\n");
-    serial.printf("pwm_value = %u\r\n", pwm_value);
-
+    // enable PWM0 so it's on
     nrf_pwm_enable(PWM0);
-    serial.printf("ENABLE = %lu\r\n", *ENABLE);
 
-    // starts the the sequence
+    // clear pwm so it lights up
+    nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
+
     nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
-    serial.printf("PTR = %lu\r\n", *SEQPTR);
-    serial.printf("CNT = %lu\r\n", *SEQCNT);
-    serial.printf("PSEL = %lu\r\n", *PSELOUT0);
-
-    // start the pwm
-    //*SEQSTART0  = 1;
 
     while (true) {
 
-        ThisThread::sleep_for(1ms);
+    if (nrf_pwm_event_check(
+            PWM0,
+            NRF_PWM_EVENT_SEQEND0))
+    {
+        nrf_pwm_event_clear(
+            PWM0,
+            NRF_PWM_EVENT_SEQEND0
+        );
+
+        nrf_pwm_task_trigger(
+            PWM0,
+            NRF_PWM_TASK_SEQSTART0
+        );
+    }
+
+    ThisThread::sleep_for(1ms);
+}
+
+
+
+    while (true) {
+
+        ThisThread::sleep_for(500ms);
 
     }
 
 }
+
+*/

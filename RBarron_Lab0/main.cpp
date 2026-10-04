@@ -27,4 +27,3 @@ int main()
     serial.printf("Number: %s\n\r", display_binary(solo));
 
 }
-
