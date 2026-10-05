@@ -25,6 +25,11 @@ ADD COMMENTS
 // base address for PWM0
 #define PWM0 (NRF_PWM_Type *)(0x4001C000)
 
+// base address for PWM0
+#define PWM1 (NRF_PWM_Type *)(0x4001C000)
+
+#define PWM3 (NRF_PWM_Type *)(0x4002D000)
+
 // output pin for PWM0 channel
 #define OUTPUT_PIN (uint32_t *)(0x4001C560)
 // the enable register for PWM0
@@ -75,6 +80,12 @@ static int period = 500; // in microseconds
 int duty_cycle_frequency = 0;
 
 int ticker_count = 0;
+
+// create thread for producer
+Thread prod;
+
+// create thread used for vanilla and chocolate
+Thread cons;
 
 // interrupt class for ticker
 void interrupt() {
@@ -177,8 +188,9 @@ void producer() {
 
     }
 
-}
-*/
+} */
+
+
 
 
 //////////////////////////////////////////////////////////////////
@@ -217,11 +229,7 @@ void vanilla_consumer() {
 
 }
 
-// create thread for producer
-Thread prod;
 
-// create thread used for vanilla and chocolate
-Thread cons;
 
 // Part 2A: main for vanilla consumer
 int main() {
@@ -260,14 +268,15 @@ int main() {
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
-
 // PART 2B: chocolate
 
-/* this comment out connects to line 304
+/* this comment out connects to line 326
 
 
 // create led that is connected to the blue pin
 PwmOut led(P0_6);
+
+
 
 // CHOCOLATE CONSUMER
 void chocolate_consumer() {
@@ -301,7 +310,6 @@ void chocolate_consumer() {
     }
 
 }
-
 // PART 2B: main for chocolate consumer
 int main() {
 
@@ -317,7 +325,7 @@ int main() {
 
 }
 
-*/ //this comment out connects to line 250
+*/ //this comment out connects to line 271
 
 
 //////////////////////////////////////////////////////////////////
@@ -325,7 +333,7 @@ int main() {
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
-/* this comment out connects to line 435
+/* // this comment out connects to line 435
 
 // PART 2C
 
@@ -351,18 +359,7 @@ void strawberry_consumer() {
     // no delay for the pwm
     sequence.end_delay = 0;
 
-    int index = 0;
 
-    // increase glow
-    for(int i = 0; i <= duty_cycle_frequency; i++) {
-    pwm_sequence[index] = i;
-    index = index + 1;
-    }
-    // decrease glow
-    for(int i = duty_cycle_frequency - 1; i >= 0; i--) {
-        pwm_sequence[index] = i;
-        index = index + 1;
-    }
 
     // conncects the red LED to PWM0
     uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
@@ -458,6 +455,9 @@ int main() {
 // PART 3
 
 
+// used for chocolate
+PwmOut led(P0_6);
+
 Queue<int, 9> vanilla_queue;
 Queue<int, 9> chocolate_queue;
 Queue<int, 9> strawberry_queue;
@@ -467,13 +467,10 @@ MemoryPool<int, 9> chocolate_mempool;
 MemoryPool<int, 9> strawberry_mempool;
 
 
-Thread prod;
+Thread produ;
 Thread vanilla;
 Thread chocolate;
 Thread strawberry;
-
-// used for chocolate
-PwmOut led(P0_6);
 
 
 void producer() {
@@ -495,24 +492,58 @@ void producer() {
 
             // create space in mempool for each duty cycle
             int *vanilla_duty = vanilla_mempool.try_alloc();
-            int *chocolate_duty = chocolate_mempool.try_alloc();
-            int *strawberry_duty = strawberry_mempool.try_alloc();
 
-            // check that duty actually points at something
-            if((vanilla_duty != nullptr) && (chocolate_duty != nullptr) && (strawberry_duty != nullptr)) {
-                
-                // the value of duty is equal to the value at the array
+            // check to see if vanilla points to smth
+            if(vanilla_duty != nullptr) {
+
+                // vanilla duty cycle is equal to the new duty cycle value added
                 *vanilla_duty = duty_cycles[i];
-                *chocolate_duty = duty_cycles[i];
-                *strawberry_duty = duty_cycles[i];
 
-                // put the value of each pointer for the duty cycle onto the queue
-                vanilla_queue.try_put(vanilla_duty);
-                chocolate_queue.try_put(chocolate_duty);
-                strawberry_queue.try_put(strawberry_duty);
+                // check that we can put smth on the queue
+                if(!vanilla_queue.try_put(vanilla_duty)) {
+                    
+                    // free the memory for the next duty cycle
+                    vanilla_mempool.free(vanilla_duty);
 
+                }
             }
 
+            int *chocolate_duty = chocolate_mempool.try_alloc();
+
+            // check to see if chocolate points to smth
+            if(chocolate_duty != nullptr) {
+
+                // chocolate duty cycle is equal to the new duty cycle value added
+                *chocolate_duty = duty_cycles[i];
+
+                // check that we can put smth on the queue
+                if(!chocolate_queue.try_put(chocolate_duty)) {
+                    
+                    // free the memory for the next duty cycle
+                    chocolate_mempool.free(chocolate_duty);
+
+                }
+            }
+
+
+            int *strawberry_duty = strawberry_mempool.try_alloc();
+
+            // check to see if strawberry points to smth
+            if(strawberry_duty != nullptr) {
+
+                // strawberry duty cycle is equal to the new duty cycle value added
+                *strawberry_duty = duty_cycles[i];
+
+                // check that we can put smth on the queue
+                if(!strawberry_queue.try_put(strawberry_duty)) {
+                    
+                    // free the memory for the next duty cycle
+                    strawberry_mempool.free(strawberry_duty);
+
+                }
+            }
+
+            //serial.printf("PRODUCER (1st sleep) i = %d\r\n", i);
             ThisThread::sleep_for(10ms);
 
         }
@@ -522,24 +553,58 @@ void producer() {
 
             // create space in mempool for each duty cycle
             int *vanilla_duty = vanilla_mempool.try_alloc();
-            int *chocolate_duty = chocolate_mempool.try_alloc();
-            int *strawberry_duty = strawberry_mempool.try_alloc();
 
-            // check that duty actually points at something
-            if((vanilla_duty != nullptr) && (chocolate_duty != nullptr) && (strawberry_duty != nullptr)) {
-                
-                // the value of duty is equal to the value at the array
+            // check to see if vanilla points to smth
+            if(vanilla_duty != nullptr) {
+
+                // vanilla duty cycle is equal to the new duty cycle value added
                 *vanilla_duty = duty_cycles[i];
-                *chocolate_duty = duty_cycles[i];
-                *strawberry_duty = duty_cycles[i];
 
-                // put the value of each pointer for the duty cycle onto the queue
-                vanilla_queue.try_put(vanilla_duty);
-                chocolate_queue.try_put(chocolate_duty);
-                strawberry_queue.try_put(strawberry_duty);
+                // check that we can put smth on the queue
+                if(!vanilla_queue.try_put(vanilla_duty)) {
+                    
+                    // free the memory for the next duty cycle
+                    vanilla_mempool.free(vanilla_duty);
 
+                }
             }
 
+            int *chocolate_duty = chocolate_mempool.try_alloc();
+
+            // check to see if chocolate points to smth
+            if(chocolate_duty != nullptr) {
+
+                // chocolate duty cycle is equal to the new duty cycle value added
+                *chocolate_duty = duty_cycles[i];
+
+                // check that we can put smth on the queue
+                if(!chocolate_queue.try_put(chocolate_duty)) {
+                    
+                    // free the memory for the next duty cycle
+                    chocolate_mempool.free(chocolate_duty);
+
+                }
+            }
+
+
+            int *strawberry_duty = strawberry_mempool.try_alloc();
+
+            // check to see if strawberry points to smth
+            if(strawberry_duty != nullptr) {
+
+                // strawberry duty cycle is equal to the new duty cycle value added
+                *strawberry_duty = duty_cycles[i];
+
+                // check that we can put smth on the queue
+                if(!strawberry_queue.try_put(strawberry_duty)) {
+                    
+                    // free the memory for the next duty cycle
+                    strawberry_mempool.free(strawberry_duty);
+
+                }
+            }
+
+            //serial.printf("PRODUCER (2nd sleep) i = %d\r\n", i);
             ThisThread::sleep_for(10ms);
 
         }
@@ -557,13 +622,17 @@ void vanilla_consumer() {
         int *pwm_ptr;
 
         // point pwm_ptr to the last element in the queue
-        if(vainlla_queue.try_get_for(1ms, &pwm_ptr)) {
+        if(vanilla_queue.try_get_for(1ms, &pwm_ptr)) {
+
+           //serial.printf("vanilla value = %d\r\n", *pwm_ptr);
 
             
             // set the duty cycle. period is 500
             // so multiplt everything by 5
             // divide by 3 to only keep on 1/3 brightness
             duty_cycle_frequency = (*pwm_ptr) * 5 / 3;
+
+            //serial.printf("vanilla value = %d, pwm = %d\r\n", *pwm_ptr, duty_cycle_frequency);
 
             // free the pointer so mempool doesn't get overrun
             vanilla_mempool.free(pwm_ptr);
@@ -589,13 +658,12 @@ void chocolate_consumer() {
 
         // point pwm_ptr to the last element in the queue
         if(chocolate_queue.try_get_for(1ms, &pwm_ptr)) {
-
-            //serial.printf("*pwm_ptr: %d\r\n", *pwm_ptr);
             
             // set the duty cycle frequency
             // have to convert 0-100 duty cycles into 0-375 cause
             // 375 is 75% brightness of 500 total period
             led.pulsewidth_us((*pwm_ptr) * 375 / 100);
+            //led.write(1.0f - ((*pwm_ptr) * 75.0f / 100.0f));
 
             // free the pointer so mempool doesn't get overrun
             chocolate_mempool.free(pwm_ptr);
@@ -628,49 +696,36 @@ void strawberry_consumer() {
     // no delay for the pwm
     sequence.end_delay = 0;
 
-    int index = 0;
-
-    // increase glow
-    for(int i = 0; i <= duty_cycle_frequency; i++) {
-    pwm_sequence[index] = i;
-    index = index + 1;
-    }
-    // decrease glow
-    for(int i = duty_cycle_frequency - 1; i >= 0; i--) {
-        pwm_sequence[index] = i;
-        index = index + 1;
-    }
-
-    // conncects the red LED to PWM0
+    // conncects the red LED to PWM3
     uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
 
     // set the sequence
-    nrf_pwm_sequence_set(PWM0, 0, &sequence);
+    nrf_pwm_sequence_set(PWM3, 0, &sequence);
 
 
-    // set up the pins to the PWM0 channel
-    nrf_pwm_pins_set(PWM0, out_pins);
+    // set up the pins to the PWM3 channel
+    nrf_pwm_pins_set(PWM3, out_pins);
 
     // select PWM unit, speed of counting, direction of counting, and what to count to 
-    nrf_pwm_configure(PWM0, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 500);
+    nrf_pwm_configure(PWM3, NRF_PWM_CLK_125kHz, NRF_PWM_MODE_UP, 500);
 
     // set the decoder to interpret the values in the sequence array
-    nrf_pwm_decoder_set(PWM0, NRF_PWM_LOAD_COMMON, NRF_PWM_STEP_AUTO);
+    nrf_pwm_decoder_set(PWM3, NRF_PWM_LOAD_COMMON, NRF_PWM_STEP_AUTO);
 
-    // enable PWM0 so it's on
-    nrf_pwm_enable(PWM0);
+    // enable PWM3 so it's on
+    nrf_pwm_enable(PWM3);
 
     // LED off to start (duty cycle = 0)
     pwm_sequence[0] = 0;
 
     // set the sequence
-    nrf_pwm_sequence_set(PWM0, 0, &sequence);
+    nrf_pwm_sequence_set(PWM3, 0, &sequence);
 
     // clear pwm to reset it
-    nrf_pwm_event_clear(PWM0, NRF_PWM_EVENT_SEQEND0);
+    nrf_pwm_event_clear(PWM3, NRF_PWM_EVENT_SEQEND0);
 
-    // activate PWM0 and start the sequence again
-    nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+    // activate PWM3 and start the sequence again
+    nrf_pwm_task_trigger(PWM3, NRF_PWM_TASK_SEQSTART0);
 
 
     while (true) {
@@ -680,19 +735,23 @@ void strawberry_consumer() {
         // point pwm_ptr to the last element in the queue
         if(strawberry_queue.try_get_for(1ms, &pwm_ptr)) {
 
+            //serial.printf("strawberry value = %d\r\n", *pwm_ptr);
+
             // set the duty cycle and scale to fit the 500us period
             // and 0-100 duty cycle range
             duty_cycle_frequency = (*pwm_ptr) * 250 / 100;
+
+            //serial.printf("strawberry value = %d, pwm = %d\r\n", *pwm_ptr, duty_cycle_frequency);
 
             // update the duty cycle value with new value
             pwm_sequence[0] = duty_cycle_frequency;
 
             // set the sequence with the new duty cycle value
-            nrf_pwm_sequence_set(PWM0, 0, &sequence);
+            nrf_pwm_sequence_set(PWM3, 0, &sequence);
 
-            // activate PWM0 and start the sequence again
+            // activate PWM3 and start the sequence again
             // with new duty cycle value
-            nrf_pwm_task_trigger(PWM0, NRF_PWM_TASK_SEQSTART0);
+            nrf_pwm_task_trigger(PWM3, NRF_PWM_TASK_SEQSTART0);
 
             // free the pointer so mempool doesn't get overrun
             strawberry_mempool.free(pwm_ptr);
@@ -708,20 +767,21 @@ void strawberry_consumer() {
 
 int main() {
 
-    // clear all the LEDs
-    setbit(SET, GREEN);
-    setbit(SET, BLUE);
-    setbit(SET, RED);
-
     // set the direction of the LEDs
     setbit(DIRSET, GREEN);
     setbit(DIRSET, BLUE);
     setbit(DIRSET, RED);
 
-    prod.start(producer);
+    // clear all the LEDs
+    setbit(SET, GREEN);
+    setbit(SET, BLUE);
+    setbit(SET, RED);
+
+    produ.start(producer);
     vanilla.start(vanilla_consumer);
     chocolate.start(chocolate_consumer);
     strawberry.start(strawberry_consumer);
+    ticker.attach(interrupt, 50us);
     
 
     while (true) {
@@ -730,5 +790,3 @@ int main() {
     }
 
 }
-
-
