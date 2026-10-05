@@ -472,7 +472,6 @@ Thread vanilla;
 Thread chocolate;
 Thread strawberry;
 
-
 void producer() {
     
     // array of all the duty cycles
@@ -492,58 +491,24 @@ void producer() {
 
             // create space in mempool for each duty cycle
             int *vanilla_duty = vanilla_mempool.try_alloc();
-
-            // check to see if vanilla points to smth
-            if(vanilla_duty != nullptr) {
-
-                // vanilla duty cycle is equal to the new duty cycle value added
-                *vanilla_duty = duty_cycles[i];
-
-                // check that we can put smth on the queue
-                if(!vanilla_queue.try_put(vanilla_duty)) {
-                    
-                    // free the memory for the next duty cycle
-                    vanilla_mempool.free(vanilla_duty);
-
-                }
-            }
-
             int *chocolate_duty = chocolate_mempool.try_alloc();
-
-            // check to see if chocolate points to smth
-            if(chocolate_duty != nullptr) {
-
-                // chocolate duty cycle is equal to the new duty cycle value added
-                *chocolate_duty = duty_cycles[i];
-
-                // check that we can put smth on the queue
-                if(!chocolate_queue.try_put(chocolate_duty)) {
-                    
-                    // free the memory for the next duty cycle
-                    chocolate_mempool.free(chocolate_duty);
-
-                }
-            }
-
-
             int *strawberry_duty = strawberry_mempool.try_alloc();
 
-            // check to see if strawberry points to smth
-            if(strawberry_duty != nullptr) {
-
-                // strawberry duty cycle is equal to the new duty cycle value added
+            // check that duty actually points at something
+            if((vanilla_duty != nullptr) && (chocolate_duty != nullptr) && (strawberry_duty != nullptr)) {
+                
+                // the value of duty is equal to the value at the array
+                *vanilla_duty = duty_cycles[i];
+                *chocolate_duty = duty_cycles[i];
                 *strawberry_duty = duty_cycles[i];
 
-                // check that we can put smth on the queue
-                if(!strawberry_queue.try_put(strawberry_duty)) {
-                    
-                    // free the memory for the next duty cycle
-                    strawberry_mempool.free(strawberry_duty);
+                // put the value of each pointer for the duty cycle onto the queue
+                vanilla_queue.try_put(vanilla_duty);
+                chocolate_queue.try_put(chocolate_duty);
+                strawberry_queue.try_put(strawberry_duty);
 
-                }
             }
 
-            //serial.printf("PRODUCER (1st sleep) i = %d\r\n", i);
             ThisThread::sleep_for(10ms);
 
         }
@@ -553,58 +518,24 @@ void producer() {
 
             // create space in mempool for each duty cycle
             int *vanilla_duty = vanilla_mempool.try_alloc();
-
-            // check to see if vanilla points to smth
-            if(vanilla_duty != nullptr) {
-
-                // vanilla duty cycle is equal to the new duty cycle value added
-                *vanilla_duty = duty_cycles[i];
-
-                // check that we can put smth on the queue
-                if(!vanilla_queue.try_put(vanilla_duty)) {
-                    
-                    // free the memory for the next duty cycle
-                    vanilla_mempool.free(vanilla_duty);
-
-                }
-            }
-
             int *chocolate_duty = chocolate_mempool.try_alloc();
-
-            // check to see if chocolate points to smth
-            if(chocolate_duty != nullptr) {
-
-                // chocolate duty cycle is equal to the new duty cycle value added
-                *chocolate_duty = duty_cycles[i];
-
-                // check that we can put smth on the queue
-                if(!chocolate_queue.try_put(chocolate_duty)) {
-                    
-                    // free the memory for the next duty cycle
-                    chocolate_mempool.free(chocolate_duty);
-
-                }
-            }
-
-
             int *strawberry_duty = strawberry_mempool.try_alloc();
 
-            // check to see if strawberry points to smth
-            if(strawberry_duty != nullptr) {
-
-                // strawberry duty cycle is equal to the new duty cycle value added
+            // check that duty actually points at something
+            if((vanilla_duty != nullptr) && (chocolate_duty != nullptr) && (strawberry_duty != nullptr)) {
+                
+                // the value of duty is equal to the value at the array
+                *vanilla_duty = duty_cycles[i];
+                *chocolate_duty = duty_cycles[i];
                 *strawberry_duty = duty_cycles[i];
 
-                // check that we can put smth on the queue
-                if(!strawberry_queue.try_put(strawberry_duty)) {
-                    
-                    // free the memory for the next duty cycle
-                    strawberry_mempool.free(strawberry_duty);
+                // put the value of each pointer for the duty cycle onto the queue
+                vanilla_queue.try_put(vanilla_duty);
+                chocolate_queue.try_put(chocolate_duty);
+                strawberry_queue.try_put(strawberry_duty);
 
-                }
             }
 
-            //serial.printf("PRODUCER (2nd sleep) i = %d\r\n", i);
             ThisThread::sleep_for(10ms);
 
         }
