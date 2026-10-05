@@ -106,10 +106,10 @@ void interrupt() {
     if(ticker_count <= duty_cycle_frequency) {
 
         // turn LED on
-        *CLEAR = (0x1 << GREEN);
+        //*CLEAR = (0x1 << GREEN);
 
         // o-scope pin
-        //*CLEAR = (0x1 << OSCOPE);
+        *CLEAR = (0x1 << OSCOPE);
 
     }
 
@@ -117,10 +117,10 @@ void interrupt() {
     else if(ticker_count > duty_cycle_frequency) {
 
         // turn LED off
-        *SET = (0x1 << GREEN);
+        //*SET = (0x1 << GREEN);
 
         // o-scope pin
-        //*SET = (0x1 << OSCOPE);
+        *SET = (0x1 << OSCOPE);
 
     }
     
@@ -129,7 +129,7 @@ void interrupt() {
 
 // producer thread for pushing new duty cycles onto the queue
 // commented out right now so it doesn't conflict with part 3
-/*
+
 void producer() {
     
     // array of all the duty cycles
@@ -188,7 +188,7 @@ void producer() {
 
     }
 
-} */
+}
 
 
 
@@ -200,7 +200,7 @@ void producer() {
 
 // PART 2A
 
-/* this comment out connect to line 253
+/* // this comment out connects to line 264
 
 // VANILLA CONSUMER
 void vanilla_consumer() {
@@ -261,7 +261,7 @@ int main() {
 }
 
 
-*/ //this comment out connect to line 188
+ *///this comment out connects to line 203
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -270,11 +270,12 @@ int main() {
 
 // PART 2B: chocolate
 
-/* this comment out connects to line 326
+/* // this comment out connects to line 326
 
 
 // create led that is connected to the blue pin
-PwmOut led(P0_6);
+//PwmOut led(P0_6);
+PwmOut oscope(P0_27);
 
 
 
@@ -282,7 +283,8 @@ PwmOut led(P0_6);
 void chocolate_consumer() {
 
     // 500 microsecond period
-    led.period_us(500);
+    //led.period_us(500);
+    oscope.period_us(500);
 
     while(true) {
 
@@ -299,7 +301,8 @@ void chocolate_consumer() {
             // set the duty cycle frequency
             // have to convert 0-100 duty cycles into 0-375 cause
             // 375 is 75% brightness of 500 total period
-            led.pulsewidth_us((*pwm_ptr) * 375 / 100);
+            //led.pulsewidth_us((*pwm_ptr) * 375 / 100);
+            oscope.pulsewidth_us((*pwm_ptr) * 375 / 100);
 
             // free the pointer so mempool doesn't get overrun
             mempool1.free(pwm_ptr);
@@ -333,7 +336,7 @@ int main() {
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
-/* // this comment out connects to line 435
+ // this comment out connects to line 435
 
 // PART 2C
 
@@ -362,7 +365,8 @@ void strawberry_consumer() {
 
 
     // conncects the red LED to PWM0
-    uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
+    //uint32_t out_pins[4] = {RED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
+    uint32_t out_pins[4] = {OSCOPE, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED, NRF_PWM_PIN_NOT_CONNECTED};
 
     // set the sequence
     nrf_pwm_sequence_set(PWM0, 0, &sequence);
@@ -445,7 +449,7 @@ int main() {
 
 }
 
-*/ //this comment out connects to line 312
+ //this comment out connects to line 312
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -454,6 +458,7 @@ int main() {
 
 // PART 3
 
+/*
 
 // used for chocolate
 PwmOut led(P0_6);
@@ -721,3 +726,5 @@ int main() {
     }
 
 }
+
+*/
