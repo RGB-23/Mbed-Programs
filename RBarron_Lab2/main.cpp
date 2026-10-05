@@ -261,7 +261,7 @@ int main() {
 }
 
 
- *///this comment out connects to line 203
+*/ //this comment out connects to line 203
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -270,7 +270,7 @@ int main() {
 
 // PART 2B: chocolate
 
-/* // this comment out connects to line 326
+/* // this comment out connects to line 331
 
 
 // create led that is connected to the blue pin
@@ -328,7 +328,7 @@ int main() {
 
 }
 
-*/ //this comment out connects to line 271
+*/ //this comment out connects to line 273
 
 
 //////////////////////////////////////////////////////////////////
@@ -336,7 +336,7 @@ int main() {
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
- // this comment out connects to line 435
+/* // this comment out connects to line 452
 
 // PART 2C
 
@@ -449,7 +449,7 @@ int main() {
 
 }
 
- //this comment out connects to line 312
+*/ //this comment out connects to line 339
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -457,8 +457,6 @@ int main() {
 //////////////////////////////////////////////////////////////////
 
 // PART 3
-
-/*
 
 // used for chocolate
 PwmOut led(P0_6);
@@ -726,5 +724,3 @@ int main() {
     }
 
 }
-
-*/
