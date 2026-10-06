@@ -2,10 +2,15 @@
 Ronan Barron
 10/6
 
-ADD COMMENTS
-
-
+This lab implements PWM is 3 different ways using MemoryPool and Queue classes.
+Producer thread pushes duty cycle values on memory pool and queue. Threads
+read the values and implemement them accordingly.
+Vanilla thread glows LED at 33% duty cycle by using a ticker and
+clearing and setting bits
+Chocolate thread uses the PwmOut class to glow the LED
+Strawberry class uses HAL functions to glow LED
 */
+
 #include "mbed.h"
 #include "USBSerial.h"
 #include "RBarron_binaryutils.hpp"
@@ -126,11 +131,11 @@ void interrupt() {
     
 }
 
-
+// NOTE: THIS PRODUCER IS USED UP UNTIL PART 3
+// ONCE YOU GET TO PART 3 COMMENT OUT THIS PRODUCER
 // producer thread for pushing new duty cycles onto the queue
 // commented out right now so it doesn't conflict with part 3
-
-void producer() {
+/*void producer() {
     
     // array of all the duty cycles
     int duty_cycles[DUTY_CYCLE_NUM] = {0};
@@ -188,7 +193,7 @@ void producer() {
 
     }
 
-}
+}*/
 
 
 
