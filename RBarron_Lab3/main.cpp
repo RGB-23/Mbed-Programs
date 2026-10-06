@@ -21,6 +21,16 @@ ADD COMMENTS
 #define HUMIDITY (uint32_t)10
 #define TEMPERATURE (uint32_t)20
 
+// SDA (P0_14) and SCL (P0_15) pin numbers
+I2C i2c(P0_14, P0_15)
+
+// 7 bit address for the temperature/humidity sensor
+const int temp_hum_addr = 0x44;
+
+// shift 7 bit address to get it into one byte 0x88
+const int 8bit_addr = 0x44 << 1;
+
+
 USBSerial serial;
 
 Mutex serial_mutex;
