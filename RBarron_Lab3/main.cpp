@@ -153,12 +153,10 @@ int main()
     // set the direction of the LEDs
     setbit(DIRSET, GREEN);
     setbit(DIRSET, BLUE);
-    setbit(DIRSET, RED);
 
     // clear all the LEDs
     setbit(SET, GREEN);
     setbit(SET, BLUE);
-    setbit(SET, RED);
 
     //humidity.start(read_humidity);
     //temperature.start(read_temperature);
