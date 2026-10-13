@@ -145,7 +145,6 @@ void read_temperature() {
 
 }
 
-
 // main() runs in its own thread in the OS
 int main()
 {
@@ -179,15 +178,18 @@ int main()
     // last number is the number of bytes that I am sending as a command (same # as commands I am sending)
     // enter programming mode to be able to use temp and humid sensors
     // check to see it is actually talking to write address
-    int val = i2c.write(addr8_write, cmd, 3);
-    serial.printf("Value of val: %d\r\n", val);
+    if (i2c.write(addr8_write, cmd, 3) == 0) {
+
+        serial.printf("Value of check: %d\r\n", check);
+
+    }
   
 
     cmd[0] = NORMAL;
     cmd[1] = ZERO;
     cmd[2] = ZERO;
 
-    if (i2c.write(addr8_write, cmd, 3)) {
+    if (i2c.write(addr8_write, cmd, 3) == 0) {
 
         check = 2;
         serial.printf("Value of check: %d\r\n", check);
@@ -200,7 +202,7 @@ int main()
     cmd[2] = ZERO;
 
     // write the register address (step 1 from figure 19)
-    if (i2c.write(addr8_write, cmd, 3)) {
+    if (i2c.write(addr8_write, cmd, 3) == 0) {
 
         check = 3;
         serial.printf("Value of check: %d\r\n", check);
@@ -214,7 +216,7 @@ int main()
     cmd[2] = ZERO;
 
     // read the register cntents
-    if (i2c.read(addr8_read, cmd, 3)) {
+    if (i2c.read(addr8_read, cmd, 3) == 0) {
 
         check = 4;
         serial.printf("Value of check: %d\r\n", check);
@@ -227,7 +229,7 @@ int main()
     cmd[0] = HUMIDITY_SENSOR_WRITE;
 
     // write the register contents back
-    if (i2c.write(addr8_write, cmd, 3)) {
+    if (i2c.write(addr8_write, cmd, 3) == 0) {
 
         check = 5;
         serial.printf("Value of check: %d\r\n", check);
@@ -238,7 +240,7 @@ int main()
     cmd[1] = LOWER;
 
     // write the upper address
-    if (i2c.write(addr8_write, cmd, 2)) {
+    if (i2c.write(addr8_write, cmd, 2) == 0) {
 
         check = 6;
         serial.printf("Value of check: %d\r\n", check);
@@ -246,7 +248,7 @@ int main()
     }
 
     // read from upper address
-    if (i2c.read(addr8_read, cmd, 2)) {
+    if (i2c.read(addr8_read, cmd, 2) == 0) {
 
         check = 7;
         serial.printf("Value of check: %d\r\n", check);
