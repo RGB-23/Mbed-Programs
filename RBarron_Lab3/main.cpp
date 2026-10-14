@@ -25,7 +25,7 @@ ADD COMMENTS
 #define DIRSET_PORT0 (uint32_t *)(0x50000818)
 
 // PIN0 as related to port 1 (pin 0 uses the offset of port 1)
-#define PIN0 (uint32_t *)(0x5000A00)
+#define PIN0 (uint32_t *)(0x50000A00)
 
 // zero is used for commands within for reading/writing
 #define ZERO (uint8_t)(0x00)
@@ -173,10 +173,10 @@ int main()
     setbit(DIRSET, VDD);
     setbit(SET, VDD);
 
-    // set up pull up PIN0 (configure it as an output - on page 155)
+    // set up pull up PIN0 (configure it as an input - on page 155)
     setbit(PIN0, 1);
 
-    // 3 == pull up the pin so 110 is equal to 3
+    // 3 == pull up the pin so 11 in binary is equal to 3
     // so set bits 2 and 3 for PIN0 to ensure it is pulled up
     setbit(PIN0, 2);
     setbit(PIN0, 3);
