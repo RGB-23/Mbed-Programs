@@ -9,6 +9,7 @@ ADD COMMENTS
 #include "mbed.h"
 #include "USBSerial.h"
 #include "RBarron_binaryutils.hpp"
+#include "math.h"
 
 #define SET (uint32_t *)(0x50000508)
 #define CLEAR (uint32_t *)(0x5000050C)
@@ -170,13 +171,6 @@ int main()
     //temperature.start(read_temperature);
     //weather.attach(weather_interrupt, 2s);
 
-    // PROVIDE VOLTAGE
-    setbit(DIRSET, VDD);
-    setbit(SET, VDD);
-
-    // set up pull up PIN0 (configure it as an input - on page 155)
-    setbit(DIRSET_PORT1, PIN0);
-    setbit(SET_PORT1, PIN0);
 
     int check = 0;
 
@@ -187,15 +181,25 @@ int main()
     cmd[1] = PROGRAMMING_MODE_2;
     cmd[2] = PROGRAMMING_MODE_3;
 
-    // last number is the number of bytes that I am sending as a command (same # as commands I am sending)
-    // enter programming mode to be able to use temp and humid sensors
-    // check to see it is actually talking to write address
+    // PROVIDE VOLTAGE
+    setbit(DIRSET, VDD);
+    setbit(SET, VDD);
+
+    
+    // set up pull up for PIN0
+    setbit(DIRSET_PORT1, PIN0);
+    setbit(SET_PORT1, PIN0);
+
     if (i2c.write(addr8_write, cmd, 3) == 0) {
 
+        check = 1;
         serial.printf("Value of check: %d\r\n", check);
 
     }
-  
+
+    // last number is the number of bytes that I am sending as a command (same # as commands I am sending)
+    // enter programming mode to be able to use temp and humid sensors
+    // check to see it is actually talking to write address
 
     cmd[0] = NORMAL;
     cmd[1] = ZERO;
@@ -266,6 +270,37 @@ int main()
         serial.printf("Value of check: %d\r\n", check);
 
     }
+
+    // combine cmd[0] and cmd[1] into 1 16-bit number 
+    // shift cmd[0] (upper)
+    // all the way over to the left so we have space for 
+    // 8 slots on the right for cmd[1] to enter in
+    int humidity_calc = (cmd[0] << 8) | (cmd[1]);
+    
+    // keep only bits 13:0
+    humidity_calc = humidity_calc & 0b0011111111111111;
+
+    // do the same for temperature
+    int temp_calc = (cmd[0] << 8) | (cmd[1]);
+    
+    // keep only bits 15:2
+    temp_calc = temp_calc & 0b1111111111111100;
+
+    // shift so bit 2 is the LSB
+    temp_calc = temp_calc >> 2;
+
+  
+    // calculate humidity
+    int percent_humidity = (humidity_calc/( ( pow(2, 14) ) - 1 ) ) * 100;
+
+    int celsius = ((temp_calc/( ( pow(2, 14) ) - 1 ) ) * 165) - 40;
+
+    serial.printf("humidity: %d\r\n", percent_humidity);
+    serial.printf("temp: %d\r\n", celsius);
+
+
+
+
 
     while (true) {
 
