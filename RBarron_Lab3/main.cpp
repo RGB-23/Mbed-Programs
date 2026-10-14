@@ -21,11 +21,12 @@ ADD COMMENTS
 #define VDD (uint8_t)22
 
 // define SET and DIRSET for Port 1
-#define SET_PORT0 (uint32_t *)(0x50000808)
-#define DIRSET_PORT0 (uint32_t *)(0x50000818)
+#define PORT1 (uint32_t *)(0x50000300)
+#define SET_PORT1 (uint32_t *)(0x50000808)
+#define DIRSET_PORT1 (uint32_t *)(0x50000818)
 
 // PIN0 as related to port 1 (pin 0 uses the offset of port 1)
-#define PIN0 (uint32_t *)(0x50000A00)
+#define PIN0 (uint8_t)0
 
 // zero is used for commands within for reading/writing
 #define ZERO (uint8_t)(0x00)
@@ -174,13 +175,8 @@ int main()
     setbit(SET, VDD);
 
     // set up pull up PIN0 (configure it as an input - on page 155)
-    setbit(PIN0, 1);
-
-    // 3 == pull up the pin so 11 in binary is equal to 3
-    // so set bits 2 and 3 for PIN0 to ensure it is pulled up
-    setbit(PIN0, 2);
-    setbit(PIN0, 3);
-    
+    setbit(DIRSET_PORT1, PIN0);
+    setbit(SET_PORT1, PIN0);
 
     int check = 0;
 
