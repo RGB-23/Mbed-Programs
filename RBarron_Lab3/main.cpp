@@ -70,6 +70,8 @@ const int addr8_write = 0x44 << 1;
 const int addr8_read = addr8_write + 0x1;
 
 
+
+
 USBSerial serial;
 
 Mutex serial_mutex;
@@ -79,6 +81,7 @@ Ticker weather;
 
 Thread humidity;
 Thread temperature;
+Thread info;
 
 int counter = 0; // used to alternate between setting the flags
 
@@ -106,6 +109,7 @@ void weather_interrupt() {
 
 }
 
+
 void read_humidity() {
 
     while (true) {
@@ -115,12 +119,76 @@ void read_humidity() {
         // lock so calculation can occur
         serial_mutex.lock();
 
-        serial.printf("Reading HUMIDITY \r\n");
+        // PROVIDE VOLTAGE
+        setbit(DIRSET, VDD);
+        setbit(SET, VDD);
+
+
+        // set up pull up for PIN0
+        setbit(DIRSET_PORT1, PIN0);
+        setbit(SET_PORT1, PIN0);
+
+        serial.printf("Reading HUMIDITY THREAD \r\n");
             
-        int check = 0;
-        
         // array for readng/writing  
         char cmd[3];
+
+        // check to see if each function call ran
+        int check = 0;
+
+
+        cmd[0] = NORMAL;
+        cmd[1] = ZERO;
+        cmd[2] = ZERO;
+
+        if (i2c.write(addr8_write, cmd, 3) == 0) {
+
+            check = 2;
+            serial.printf("Value of check: %d\r\n", check);
+
+        }
+
+        // write and read the humidity info
+        cmd[0] = HUMIDITY_SENSOR_READ;
+        cmd[1] = ZERO;
+        cmd[2] = ZERO;
+
+        // write the register address (step 1 from figure 19)
+        if (i2c.write(addr8_write, cmd, 3) == 0) {
+
+            check = 3;
+            serial.printf("Value of check: %d\r\n", check);
+
+
+        }
+
+        cmd[0] = ZERO;
+        cmd[1] = ZERO;
+        cmd[2] = ZERO;
+
+        // read the register cntents
+        if (i2c.read(addr8_read, cmd, 3) == 0) {
+
+            check = 4;
+            serial.printf("Value of check: %d\r\n", check);
+
+        }
+
+
+        cmd[0] = HUMIDITY_SENSOR_WRITE;
+
+        // bitmask and set bits 10 and 11 to get a resolution of 14
+        cmd[1] = (cmd[1] & 0b11110011) | 0b00001100;
+
+        // write the register contents back
+        if (i2c.write(addr8_write, cmd, 3) == 0) {
+
+            check = 5;
+            serial.printf("Value of check: %d\r\n", check);
+
+        }
+
+    
 
         cmd[0] = UPPER;
         cmd[1] = LOWER;
@@ -128,16 +196,16 @@ void read_humidity() {
         // write the upper address
         if (i2c.write(addr8_write, cmd, 2) == 0) {
 
-            check = 7;
-            //serial.printf("Value of check: %d\r\n", check);
+            check = 6;
+            serial.printf("Value of check: %d\r\n", check);
 
         }
 
         // read from upper address
         if (i2c.read(addr8_read, cmd, 2) == 0) {
 
-            check = 8;
-            //serial.printf("Value of check: %d\r\n", check);
+            check = 7;
+            serial.printf("Value of check: %d\r\n", check);
 
         }
 
@@ -150,6 +218,8 @@ void read_humidity() {
         // keep only bits 13:0
         humidity_calc = humidity_calc & 0b0011111111111111;
 
+        serial.printf("Raw humidity value: %d\r\n", humidity_calc);
+
     
         // calculate humidity based off equations in the data sheet
         int percent_humidity = (humidity_calc/( ( pow(2, 14) ) - 1 ) ) * 100;
@@ -160,11 +230,10 @@ void read_humidity() {
         //unlock so calculation can occur
         serial_mutex.unlock();
 
-        ThisThread::sleep_for(5s);
-
     }
 
 }
+
 
 
 void read_temperature() {
@@ -178,23 +247,24 @@ void read_temperature() {
 
         serial.printf("Reading TEMPERATURE \r\n");
 
-        int check = 0;
-        
-        // array for readng/writing        
+
+        // array for readng/writing  
         char cmd[3];
+
+        // check to see if each function call ran
+        int check = 0;
+
 
         cmd[0] = NORMAL;
         cmd[1] = ZERO;
         cmd[2] = ZERO;
 
-        // start in normal mode
         if (i2c.write(addr8_write, cmd, 3) == 0) {
 
             check = 2;
-            //serial.printf("Value of check: %d\r\n", check);
+            serial.printf("Value of check: %d\r\n", check);
 
         }
-        
 
         // write and read the humidity info
         cmd[0] = HUMIDITY_SENSOR_READ;
@@ -202,13 +272,14 @@ void read_temperature() {
         cmd[2] = ZERO;
 
         // write the register address (step 1 from figure 19)
-        if (i2c.write(addr8_write, cmd, 3) == 0) {
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
 
             check = 3;
-            //serial.printf("Value of check: %d\r\n", check);
+            serial.printf("Value of check: %d\r\n", check);
 
 
         }
+
 
         cmd[0] = ZERO;
         cmd[1] = ZERO;
@@ -218,7 +289,7 @@ void read_temperature() {
         if (i2c.read(addr8_read, cmd, 3) == 0) {
 
             check = 4;
-            //serial.printf("Value of check: %d\r\n", check);
+            serial.printf("Value of check: %d\r\n", check);
 
         }
 
@@ -228,16 +299,16 @@ void read_temperature() {
         // write the upper address
         if (i2c.write(addr8_write, cmd, 2) == 0) {
 
-            check = 7;
-            //serial.printf("Value of check: %d\r\n", check);
+            check = 6;
+            serial.printf("Value of check: %d\r\n", check);
 
         }
 
         // read from upper address
         if (i2c.read(addr8_read, cmd, 2) == 0) {
 
-            check = 8;
-            //serial.printf("Value of check: %d\r\n", check);
+            check = 7;
+            serial.printf("Value of check: %d\r\n", check);
 
         }
 
@@ -265,15 +336,13 @@ void read_temperature() {
         // unlock so humidity can run
         serial_mutex.unlock();
 
-        ThisThread::sleep_for(5s);
-
     }
 
 }
 
+
 // main() runs in its own thread in the OS
-int main()
-{
+int main() {
 
     // set the direction of the LEDs
     //setbit(DIRSET, GREEN);
@@ -287,55 +356,36 @@ int main()
     setbit(DIRSET, VDD);
     setbit(SET, VDD);
 
-    //ThisThread::sleep_for(10ms);
 
-    
     // set up pull up for PIN0
     setbit(DIRSET_PORT1, PIN0);
     setbit(SET_PORT1, PIN0);
 
-    humidity.start(read_humidity);
-    temperature.start(read_temperature);
-    weather.attach(weather_interrupt, 7s);
+    ThisThread::sleep_for(100ms);
+
+    int check = 0;
 
 
-/*
-    cmd[0] = PROGRAMMING_MODE_1;
-    cmd[1] = PROGRAMMING_MODE_2;
-    cmd[2] = PROGRAMMING_MODE_3;    
+    char cmd[4];
 
-    // last number is the number of bytes that I am sending as a command (same # as commands I am sending)
-    // enter programming mode to be able to use temp and humid sensors
-    // check to see it is actually talking to write address
-    if (i2c.write(addr8_write, cmd, 3) == 0) {
-
-        check = 1;
-        serial.printf("Value of check: %d\r\n", check);
-
-    }
-
-
-    
-    cmd[0] = NORMAL;
+    cmd[0] = ZERO;
     cmd[1] = ZERO;
     cmd[2] = ZERO;
+    cmd[3] = ZERO;
+
 
     // start in normal mode
-    if (i2c.write(addr8_write, cmd, 3) == 0) {
+    if (i2c.write(addr8_write, cmd, 0) == 0) {
 
         check = 2;
         serial.printf("Value of check: %d\r\n", check);
 
     }
-    
 
-    // write and read the humidity info
-    cmd[0] = HUMIDITY_SENSOR_READ;
-    cmd[1] = ZERO;
-    cmd[2] = ZERO;
+    ThisThread::sleep_for(50ms);
 
-    // write the register address (step 1 from figure 19)
-    if (i2c.write(addr8_write, cmd, 3) == 0) {
+
+    if (i2c.read(addr8_read, cmd, 4) == 0) {
 
         check = 3;
         serial.printf("Value of check: %d\r\n", check);
@@ -343,53 +393,6 @@ int main()
 
     }
 
-    cmd[0] = ZERO;
-    cmd[1] = ZERO;
-    cmd[2] = ZERO;
-
-    // read the register cntents
-    if (i2c.read(addr8_read, cmd, 3) == 0) {
-
-        check = 4;
-        serial.printf("Value of check: %d\r\n", check);
-
-    }
-
-  
-
-    cmd[0] = HUMIDITY_SENSOR_WRITE;
-
-    // bitmask and set bits 10 and 11 to get a resolution of 14
-    cmd[1] = (cmd[1] & 0b11110011) | 0b00001100;
-
-    // write the register contents back
-    if (i2c.write(addr8_write, cmd, 3) == 0) {
-
-        check = 5;
-        serial.printf("Value of check: %d\r\n", check);
-
-    }
-
-
-
-    cmd[0] = UPPER;
-    cmd[1] = LOWER;
-
-    // write the upper address
-    if (i2c.write(addr8_write, cmd, 2) == 0) {
-
-        check = 7;
-        serial.printf("Value of check: %d\r\n", check);
-
-    }
-
-    // read from upper address
-    if (i2c.read(addr8_read, cmd, 2) == 0) {
-
-        check = 8;
-        serial.printf("Value of check: %d\r\n", check);
-
-    }
 
     // combine cmd[0] and cmd[1] into 1 16-bit number 
     // shift cmd[0] (upper)
@@ -401,7 +404,7 @@ int main()
     humidity_calc = humidity_calc & 0b0011111111111111;
 
     // do the same for temperature
-    int temp_calc = (cmd[0] << 8) | (cmd[1]);
+    int temp_calc = (cmd[2] << 8) | (cmd[3]);
     
     // keep only bits 15:2
     temp_calc = temp_calc & 0b1111111111111100;
@@ -417,9 +420,13 @@ int main()
 
     // print out humidity and temp values
     serial.printf("humidity: %d\r\n", percent_humidity);
-    serial.printf("temp: %d\r\n", fahrenheit);
+    serial.printf("temp: %d\r\n", celsius);
 
-    */
+
+
+    //humidity.start(read_humidity);
+    //temperature.start(read_temperature);
+    //weather.attach(weather_interrupt, 3s);
 
 
     while (true) {
@@ -428,3 +435,7 @@ int main()
 
     }
 }
+
+
+
+ 
