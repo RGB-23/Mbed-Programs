@@ -54,9 +54,6 @@ const int addr8_write = 0x44 << 1;
 // 1 as the last bit means it reads
 const int addr8_read = addr8_write + 0x1;
 
-
-
-
 USBSerial serial;
 
 Mutex serial_mutex;
@@ -119,7 +116,7 @@ void read_humidity() {
         if (i2c.write(addr8_write, cmd, 0) == 0) {
 
             check = 2;
-            serial.printf("Value of check: %d\r\n", check);
+            //serial.printf("Value of check: %d\r\n", check);
 
         }
 
@@ -129,7 +126,7 @@ void read_humidity() {
         if (i2c.read(addr8_read, cmd, 4) == 0) {
 
             check = 3;
-            serial.printf("Value of check: %d\r\n", check);
+            //serial.printf("Value of check: %d\r\n", check);
 
 
         }
@@ -186,7 +183,7 @@ void read_temperature() {
         if (i2c.write(addr8_write, cmd, 0) == 0) {
 
             check = 2;
-            serial.printf("Value of check: %d\r\n", check);
+            //serial.printf("Value of check: %d\r\n", check);
 
         }
 
@@ -196,7 +193,7 @@ void read_temperature() {
         if (i2c.read(addr8_read, cmd, 4) == 0) {
 
             check = 3;
-            serial.printf("Value of check: %d\r\n", check);
+            //serial.printf("Value of check: %d\r\n", check);
 
 
         }
