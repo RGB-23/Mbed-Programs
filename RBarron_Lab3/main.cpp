@@ -101,6 +101,7 @@ void read_humidity() {
         // lock so calculation can occur
         serial_mutex.lock();
 
+        serial.printf("Reading HUMIDITY \r\n");
 
         int check = 0;
 
