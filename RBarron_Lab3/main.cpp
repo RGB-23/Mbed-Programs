@@ -1,8 +1,13 @@
 /*
 Ronan Barron
-10/18
+10/19
 
-ADD COMMENTS
+This code implements I2C to read temperature and humidity data from the surrounding environment
+A humidity and temperature thread are implemented - both to read/calculate their respective values
+mutexes and event flags are used to ensure only one thread accesses
+the serial port at a time and will not give up the serial port until it has released the mutex
+
+
 
 */
 
