@@ -169,24 +169,23 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
 
         );
 
-        ser.printf("after advertising parameters\r\n");
+        //ser.printf("after advertising parameters\r\n");
 
         if (error != BLE_ERROR_NONE) {
 
-            ser.printf("advertising paramters failed\r\n");
-            return;
+            ser.printf("paramters failed\r\n");
         }
 
         AdvertisingDataSimpleBuilder<LEGACY_ADVERTISING_MAX_SIZE> data_builder;
 
-        ser.printf("builder created\r\n");
+        //ser.printf("builder created\r\n");
 
         data_builder.setFlags();
-        ser.printf("flags set\r\n");
+        //ser.printf("flags set\r\n");
         data_builder.setName("Ronan_is_cool");
-        ser.printf("name set\r\n");
+        //ser.printf("name set\r\n");
         data_builder.setAppearance(adv_data_appearance_t::GENERIC_THERMOMETER);
-        ser.printf("appearance set\r\n");
+        //ser.printf("appearance set\r\n");
 
         ser.printf("before advertising payload\r\n");
 
@@ -195,16 +194,12 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
             data_builder.getAdvertisingData()
         );
 
-        ser.printf("after advertising payload\r\n");
-
-
         if (error != BLE_ERROR_NONE) {
 
-            ser.printf("Advertising failed\r\n");
+            ser.printf("advertising failed\r\n");
         }
 
-        ser.printf("Advertising payload set up\r\n");
-
+        // start advertising
         error = gap.startAdvertising(LEGACY_ADVERTISING_HANDLE);
 
         if (error != BLE_ERROR_NONE) {
