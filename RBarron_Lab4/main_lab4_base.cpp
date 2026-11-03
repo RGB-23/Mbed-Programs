@@ -23,8 +23,12 @@
 #include <ble/gatt/GattCharacteristic.h>
 #include <ble/gatt/GattService.h>
 #include "att_uuid.h"
-
 #include <USBSerial.h>
+
+// event flags for ensuring ble has been initialized
+#define INITIALIZED (uint32_t)10
+
+EventFlags event_flags;
 
 USBSerial ser;
 
@@ -37,9 +41,9 @@ BLE &bleinit= BLE::Instance();
 // Your GAP instance
 Gap &gap = bleinit.gap();
 // Your GattServer instance
-GattServer& gattServe = bleinit.gattServer();
+GattServer &gattServe = bleinit.gattServer();
 // Your GattClient instance
-GattClient& gattClient = bleinit.gattClient();
+GattClient &gattClient = bleinit.gattClient();
 
 int16_t TOUT = 0;
 
@@ -145,18 +149,17 @@ void measure_temp(){
 // BLE_ERROR_NONE (found in API) means no error
 void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
 
-
     if ((*params).error == BLE_ERROR_NONE) {
 
+        event_flags.wait_all(INITIALIZED);
         ser.printf("Initialized");
-
     }
 
     else {
 
         ser.printf("Not initialized");
-
     }
+
 
 
 
@@ -179,8 +182,10 @@ int main(){
 	thread_sleep_for(1);
     bleinit.onEventsToProcess(schedule_ble_events);
 
+    event_flags.set(INITIALIZED);
+
     //initialize bleinit in main
-   bleinit.init(on_init_complete);
+    bleinit.init(on_init_complete);
 
     // This will never return...
     event_queue.dispatch_forever();
