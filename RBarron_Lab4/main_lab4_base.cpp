@@ -151,19 +151,78 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
 
     if ((*params).error == BLE_ERROR_NONE) {
 
-        event_flags.wait_all(INITIALIZED);
-        ser.printf("Initialized");
+        //event_flags.set(INITIALIZED);
+        ser.printf("Initialized\r\n");
+
+        gap.setEventHandler(&THE_gap_EvtHandler);
+
+        ser.printf("before advertising parameters\r\n");
+
+        ble_error_t error = gap.setAdvertisingParameters(
+
+            LEGACY_ADVERTISING_HANDLE,
+            AdvertisingParameters(
+                advertising_type_t::CONNECTABLE_UNDIRECTED,
+                adv_interval_t(ble::millisecond_t(100)),
+                adv_interval_t(ble::millisecond_t(200))
+            )
+
+        );
+
+        ser.printf("after advertising parameters\r\n");
+
+        if (error != BLE_ERROR_NONE) {
+
+            ser.printf("advertising paramters failed\r\n");
+            return;
+        }
+
+        AdvertisingDataSimpleBuilder<LEGACY_ADVERTISING_MAX_SIZE> data_builder;
+
+        ser.printf("builder created\r\n");
+
+        data_builder.setFlags();
+        ser.printf("flags set\r\n");
+        data_builder.setName("Ronan_is_cool");
+        ser.printf("name set\r\n");
+        data_builder.setAppearance(adv_data_appearance_t::GENERIC_THERMOMETER);
+        ser.printf("appearance set\r\n");
+
+        ser.printf("before advertising payload\r\n");
+
+        error = gap.setAdvertisingPayload(        
+            LEGACY_ADVERTISING_HANDLE,
+            data_builder.getAdvertisingData()
+        );
+
+        ser.printf("after advertising payload\r\n");
+
+
+        if (error != BLE_ERROR_NONE) {
+
+            ser.printf("Advertising failed\r\n");
+        }
+
+        ser.printf("Advertising payload set up\r\n");
+
+        error = gap.startAdvertising(LEGACY_ADVERTISING_HANDLE);
+
+        if (error != BLE_ERROR_NONE) {
+
+            ser.printf("Starting advertising failed\r\n");
+        }
+
+        ser.printf("Advertising set up successfully");
+
     }
 
     else {
 
-        ser.printf("Not initialized");
+        ser.printf("Not initialized\r\n");
     }
 
-
-
-
 }
+
 
 /* Schedule processing of events from the BLE middleware in the event queue. */
 void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context){
@@ -172,9 +231,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context){
 
 
 
-
-
 int main(){
+
     DigitalOut i2cbuspull(P1_0); // Pull up i2C. resistor.
     i2cbuspull.write(1);
     DigitalOut sensor_pwr(P0_22); // Supply power to all of the sensors (VCC)
@@ -182,11 +240,11 @@ int main(){
 	thread_sleep_for(1);
     bleinit.onEventsToProcess(schedule_ble_events);
 
-    event_flags.set(INITIALIZED);
-
     //initialize bleinit in main
     bleinit.init(on_init_complete);
 
+
     // This will never return...
     event_queue.dispatch_forever();
+
 }
