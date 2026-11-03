@@ -49,6 +49,12 @@ int16_t TOUT = 0;
 
 using namespace ble;
 
+static const ble::AdvertisingParameters advertising_params(
+    ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+    adv_interval_t(ble::millisecond_t(25)),
+    adv_interval_t(ble::millisecond_t(50))
+);
+
 /**
  * Event handler struct
  */
@@ -156,18 +162,9 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
 
         gap.setEventHandler(&THE_gap_EvtHandler);
 
-        ser.printf("before advertising parameters\r\n");
+        //ser.printf("before advertising parameters\r\n");
 
-        ble_error_t error = gap.setAdvertisingParameters(
-
-            LEGACY_ADVERTISING_HANDLE,
-            AdvertisingParameters(
-                advertising_type_t::CONNECTABLE_UNDIRECTED,
-                adv_interval_t(ble::millisecond_t(100)),
-                adv_interval_t(ble::millisecond_t(200))
-            )
-
-        );
+        ble_error_t error = gap.setAdvertisingParameters(LEGACY_ADVERTISING_HANDLE, advertising_params);
 
         //ser.printf("after advertising parameters\r\n");
 
