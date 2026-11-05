@@ -184,7 +184,7 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
         data_builder.setAppearance(adv_data_appearance_t::GENERIC_THERMOMETER);
         //ser.printf("appearance set\r\n");
 
-        ser.printf("before advertising payload\r\n");
+        //ser.printf("before advertising payload\r\n");
 
         error = gap.setAdvertisingPayload(        
             LEGACY_ADVERTISING_HANDLE,
