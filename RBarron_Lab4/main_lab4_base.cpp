@@ -46,14 +46,70 @@ GattServer &gattServe = bleinit.gattServer();
 GattClient &gattClient = bleinit.gattClient();
 
 int16_t TOUT = 0;
+int16_t humidity_OUT = 0; //humidity output
 
 using namespace ble;
+
+// temperature characteristic
+ReadOnlyGattCharacteristic<int16_t> temperatureCharacteristic(
+    UUID(0x6767),
+    &TOUT,
+    GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
+    GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_INDICATE
+);
+
+// characteristic table
+GattCharacteristic *characteristics[] = {
+    &temperatureCharacteristic
+};
+
+// UUID for health thermometer service
+GattService temperatureService(
+    UUID(0x1809),
+    characteristics,
+    sizeof(characteristics) / sizeof(GattCharacteristic *)
+);
 
 static const ble::AdvertisingParameters advertising_params(
     ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
     adv_interval_t(ble::millisecond_t(25)),
     adv_interval_t(ble::millisecond_t(50))
 );
+
+
+void update_temperature_characteristic(int16_t newTemperature) {
+
+    TOUT = newTemperature;
+
+    ble_error_t err = gattServe.write(
+        temperatureCharacteristic.getValueHandle(),
+        (const uint8_t *)&TOUT,
+        sizeof(TOUT)
+    );
+
+    if (err != BLE_ERROR_NONE) {
+        ser.printf("Temperature update failed: %d\r\n", err);
+    }
+}
+
+
+void update_humidity_characteristic(uint16_t newHumidity) {
+
+    humidity_OUT = newHumidity;
+
+    ble_error_t err = gattServe.write(
+        humidityCharacteristic.getValueHandle(),
+        (const uint8_t *)&humidity_OUT,
+        sizeof(humidity_OUT)
+    );
+
+    if (err != BLE_ERROR_NONE) {
+        ser.printf("Humidity update failed: %d\r\n", err);
+    }
+}
+
+
+
 
 /**
  * Event handler struct
@@ -66,6 +122,42 @@ struct GapEventHandler : Gap::EventHandler{
 	 void onScanRequestReceived (const ScanRequestEvent &event){
 		 ser.printf("Rude words");
 	 }
+
+     void onAdvertisingStart(const AdvertisingStartEvent &event) {
+
+        ser.printf("Advertising started\r\n");
+     }
+
+    void onAdvertisingEnd(const AdvertisingEndEvent &event) {
+
+        ser.printf("Advertising ended\r\n");
+
+        // in Events.h line 635-638
+        if (event.getStatus() == BLE_ERROR_LIMIT_REACHED) {
+
+            // if set number of events have been reached
+            ser.printf("Number of events have been reached\r\n");
+        }
+
+        // if set time has elapsed
+        if (event.getStatus() == BLE_ERROR_TIMEOUT) {
+
+            ser.printf("Timed out\r\n");
+        }
+
+        // if connection occurred or user ended the set
+        if (event.getStatus() == BLE_ERROR_NONE) {
+
+            ser.printf("Connection occurred or user ended the set\r\n");
+        }
+
+        else {
+
+            ser.printf("Advertising ended for some reason\r\n");
+        }
+
+    }
+
 };
 
 
@@ -145,15 +237,70 @@ void measure_temp(){
 
         humidity = ((readData[0] & 0x3F) << 8) | readData[1];
         ser.printf("Humidity %: %u\n", (humidity*100/16383));
+
+        // calculate humidity and temp
+        // method used from lab 3
+        int humidity_calc = (readData[0] << 8) | (readData[1]);
+        
+        // keep only bits 13:0
+        humidity_calc = humidity_calc & 0b0011111111111111;
+    
+        // calculate humidity and temperature based off equations
+        // in the data sheet
+        humidity_OUT = (humidity_calc * 100)/( pow(2, 14) ) - 1 );
+
+        // do the same for temperature
+        int temp_calc = (readData[2] << 8) | (readData[3]);
+        
+        // keep only bits 15:2
+        temp_calc = temp_calc & 0b1111111111111100;
+
+        // shift so bit 2 is the LSB
+        temp_calc = temp_calc >> 2;
+
+        int16_t celsius = ((temp_calc/( ( pow(2, 14) ) - 1 ) ) * 165) - 40;
+
+        TOUT = celsius;
+
+
+
+
+        // print out humidity and temp values
+        serial.printf("humidity: %d\r\n", percent_humidity);
+
+        event_queue.call(update_temperature, TOUT);
+        event_queue.call(update_humidity, humidityOUT);        
         
     }
+
+
+
 }
+
+
+
+
 
 // InitializationCompleteCallbackContext has 2 fields
 // 1 for the BLE and one for the error
 // the error is of type ble_error_t, which is an enum
 // BLE_ERROR_NONE (found in API) means no error
 void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
+
+
+    // add service to GATT server
+    ble_error_t error = gattServe.addService(temperatureService);
+
+    if (error != BLE_ERROR_NONE) {
+        ser.printf("Adding temperature service failed\r\n");
+    }
+    else {
+        ser.printf("Temperature service added\r\n");
+    }
+
+
+    event_queue.call_every(1000, update_temperature_characteristic);
+
 
     if ((*params).error == BLE_ERROR_NONE) {
 
@@ -204,7 +351,11 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
             ser.printf("Starting advertising failed\r\n");
         }
 
-        ser.printf("Advertising set up successfully");
+        ser.printf("Advertising set up successfully\r\n");
+
+        event_queue.call_every(1000, []() {
+        update_temperature_characteristic(TOUT);
+        });
 
     }
 
@@ -230,6 +381,9 @@ int main(){
     DigitalOut sensor_pwr(P0_22); // Supply power to all of the sensors (VCC)
     sensor_pwr.write(1);
 	thread_sleep_for(1);
+
+    tempthread.start(measure_temp);
+
     bleinit.onEventsToProcess(schedule_ble_events);
 
     //initialize bleinit in main
