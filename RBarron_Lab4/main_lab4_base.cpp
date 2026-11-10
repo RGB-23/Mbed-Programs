@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+ /*
+  * Ranan Barron
+  * 11/9
+  * This code implements bluetooth using the microcontroller.
+  * 
+  *
+ */
+
 #include "mbed.h"
 #include <cstdint>
 #include <events/mbed_events.h>
@@ -24,11 +32,7 @@
 #include <ble/gatt/GattService.h>
 #include "att_uuid.h"
 #include <USBSerial.h>
-
-// event flags for ensuring ble has been initialized
-#define INITIALIZED (uint32_t)10
-
-EventFlags event_flags;
+#include <math.h>
 
 USBSerial ser;
 
@@ -46,28 +50,47 @@ GattServer &gattServe = bleinit.gattServer();
 GattClient &gattClient = bleinit.gattClient();
 
 int16_t TOUT = 0;
-int16_t humidity_OUT = 0; //humidity output
+int16_t humidity_output = 0; //humidity output
 
 using namespace ble;
 
 // temperature characteristic
-ReadOnlyGattCharacteristic<int16_t> temperatureCharacteristic(
+ReadOnlyGattCharacteristic<int16_t> temperature_characteristic(
     UUID(0x6767),
     &TOUT,
-    GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
     GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_INDICATE
 );
 
-// characteristic table
-GattCharacteristic *characteristics[] = {
-    &temperatureCharacteristic
-};
+// temperature characteristic table
+// creates an arry to the characteristics of the temperature service
+GattCharacteristic *temp_characteristics_table[] = {&temperature_characteristic};
 
+// temperature GATT service
 // UUID for health thermometer service
 GattService temperatureService(
-    UUID(0x1809),
-    characteristics,
-    sizeof(characteristics) / sizeof(GattCharacteristic *)
+UUID(0x1234),
+    temp_characteristics_table,
+    sizeof(temp_characteristics_table) / sizeof(temp_characteristics_table[0])
+);
+
+
+// humidity characteristic
+ReadOnlyGattCharacteristic<int16_t> humidity_characteristic(
+    UUID(0x6767),
+    &humidity_output,
+    GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_INDICATE
+);
+
+// humidity characteristic table
+// creates an arry to the characteristics of the humidity service
+GattCharacteristic *humidity_characteristics_table[] = {&humidity_characteristic};
+
+// humidity GATT service
+// UUID for health thermometer service is 0x181A
+GattService humidityService(
+    UUID(0x181A),
+    humidity_characteristics_table,
+    sizeof(humidity_characteristics_table) / sizeof(humidity_characteristics_table[0])
 );
 
 static const ble::AdvertisingParameters advertising_params(
@@ -76,36 +99,31 @@ static const ble::AdvertisingParameters advertising_params(
     adv_interval_t(ble::millisecond_t(50))
 );
 
+// scheduled in the event queue for GATT stuff to occur
+void update_temperature(int16_t newTemperature) {
 
-void update_temperature_characteristic(int16_t newTemperature) {
+    TOUT = newTemperature; // updated temperature
 
-    TOUT = newTemperature;
-
+    // wrtie the new temp into GATT characteristic
     ble_error_t err = gattServe.write(
-        temperatureCharacteristic.getValueHandle(),
+        temperature_characteristic.getValueHandle(),
         (const uint8_t *)&TOUT,
         sizeof(TOUT)
     );
-
-    if (err != BLE_ERROR_NONE) {
-        ser.printf("Temperature update failed: %d\r\n", err);
-    }
 }
 
+// scheduled in the event queue for GATT stuff to occur
+void update_humidity(uint16_t newHumidity) {
 
-void update_humidity_characteristic(uint16_t newHumidity) {
+    // updated humidity
+    humidity_output = newHumidity;
 
-    humidity_OUT = newHumidity;
-
+    // wrtie the new humidity into GATT characteristic
     ble_error_t err = gattServe.write(
-        humidityCharacteristic.getValueHandle(),
-        (const uint8_t *)&humidity_OUT,
-        sizeof(humidity_OUT)
+        humidity_characteristic.getValueHandle(),
+        (const uint8_t *)&humidity_output,
+        sizeof(humidity_output)
     );
-
-    if (err != BLE_ERROR_NONE) {
-        ser.printf("Humidity update failed: %d\r\n", err);
-    }
 }
 
 
@@ -123,11 +141,13 @@ struct GapEventHandler : Gap::EventHandler{
 		 ser.printf("Rude words");
 	 }
 
-     void onAdvertisingStart(const AdvertisingStartEvent &event) {
+    // runs when BLE advertisiing starts
+    void onAdvertisingStart(const AdvertisingStartEvent &event) {
 
         ser.printf("Advertising started\r\n");
      }
 
+    // runs when BLE advertising ends
     void onAdvertisingEnd(const AdvertisingEndEvent &event) {
 
         ser.printf("Advertising ended\r\n");
@@ -151,6 +171,7 @@ struct GapEventHandler : Gap::EventHandler{
             ser.printf("Connection occurred or user ended the set\r\n");
         }
 
+        // catch all
         else {
 
             ser.printf("Advertising ended for some reason\r\n");
@@ -174,13 +195,13 @@ void measure_temp(){
 
 	const int readaddr = 0x88; // 44, left shifted
 	const int writeaddr = 0x88;
-    char readData[] ={0, 0, 0};
+    char readData[] ={0, 0, 0, 0}; // changed to 4 so i can calculate temperature
     uint16_t upperID =0;
     uint16_t lowerID =0;
     uint32_t fullID =0;
     resp = sensor_bus.write(writeaddr, (const char *) subvol_open, sizeof(subvol_open)/sizeof(subvol_open[0]), false);    
     if(  resp != 0 ){
-        ser.printf("Darn! I failed to talk at the temp sensor. (Returned: %d)\n\r", resp);            
+        ser.printf("Darn! I failed to talk at the temp sensor. (Returned: %d)\r\n", resp);            
     }
 
     // write the upper two bytes of the sensor ID
@@ -188,13 +209,13 @@ void measure_temp(){
               
     // info for the upper two bytes
     if( sensor_bus.read(readaddr, readData, 3)  != 0 ){
-        ser.printf("Darn! I failed to listen to the temp sensor.\n\r");
+        ser.printf("Darn! I failed to listen to the temp sensor.\r\n");
     }
     
     // check that the first byte == 0x81
     // combine both bytes to make the full upper ID
     if( readData[0] != 0x81 ){
-        ser.printf("Upper ID read not Successful.\n\r");
+        ser.printf("Upper ID read not Successful.\r\n");
     }else{        
         upperID = (readData[1] << 8);
         upperID |= readData[2];
@@ -247,10 +268,10 @@ void measure_temp(){
     
         // calculate humidity and temperature based off equations
         // in the data sheet
-        humidity_OUT = (humidity_calc * 100)/( pow(2, 14) ) - 1 );
+        humidity_output = ((humidity_calc * 100)/( pow(2, 14) ) - 1 );
 
         // do the same for temperature
-        int temp_calc = (readData[2] << 8) | (readData[3]);
+        int16_t temp_calc = (readData[2] << 8) | (readData[3]);
         
         // keep only bits 15:2
         temp_calc = temp_calc & 0b1111111111111100;
@@ -262,22 +283,12 @@ void measure_temp(){
 
         TOUT = celsius;
 
-
-
-
-        // print out humidity and temp values
-        serial.printf("humidity: %d\r\n", percent_humidity);
-
+        // schedule the updated values onto the event queue
         event_queue.call(update_temperature, TOUT);
-        event_queue.call(update_humidity, humidityOUT);        
+        event_queue.call(update_humidity, humidity_output);        
         
     }
-
-
-
 }
-
-
 
 
 
@@ -288,18 +299,23 @@ void measure_temp(){
 void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
 
 
-    // add service to GATT server
-    ble_error_t error = gattServe.addService(temperatureService);
+    // add temp/humidity services to GATT server
+    ble_error_t error1 = gattServe.addService(temperatureService);
+    ble_error_t error2 = gattServe.addService(humidityService);
 
-    if (error != BLE_ERROR_NONE) {
-        ser.printf("Adding temperature service failed\r\n");
+    if (error1 != BLE_ERROR_NONE) {
+        ser.printf("Temperature service failed\r\n");
     }
     else {
         ser.printf("Temperature service added\r\n");
     }
 
-
-    event_queue.call_every(1000, update_temperature_characteristic);
+    if (error2 != BLE_ERROR_NONE) {
+        ser.printf("Humidity service failed\r\n");
+    }
+    else {
+        ser.printf("Humidity service added\r\n");
+    }
 
 
     if ((*params).error == BLE_ERROR_NONE) {
@@ -324,19 +340,22 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
 
         //ser.printf("builder created\r\n");
 
+        // add advertising flags
         data_builder.setFlags();
         //ser.printf("flags set\r\n");
+
+        // set the name 
         data_builder.setName("Ronan_is_cool");
         //ser.printf("name set\r\n");
+
+        // set the device to generic thermometer
         data_builder.setAppearance(adv_data_appearance_t::GENERIC_THERMOMETER);
         //ser.printf("appearance set\r\n");
 
         //ser.printf("before advertising payload\r\n");
 
-        error = gap.setAdvertisingPayload(        
-            LEGACY_ADVERTISING_HANDLE,
-            data_builder.getAdvertisingData()
-        );
+        // send the advertising data to make it appear
+        error = gap.setAdvertisingPayload(LEGACY_ADVERTISING_HANDLE, data_builder.getAdvertisingData());
 
         if (error != BLE_ERROR_NONE) {
 
@@ -352,10 +371,6 @@ void on_init_complete(BLE::InitializationCompleteCallbackContext *params){
         }
 
         ser.printf("Advertising set up successfully\r\n");
-
-        event_queue.call_every(1000, []() {
-        update_temperature_characteristic(TOUT);
-        });
 
     }
 
@@ -382,6 +397,7 @@ int main(){
     sensor_pwr.write(1);
 	thread_sleep_for(1);
 
+    // start measuring temp/humidity
     tempthread.start(measure_temp);
 
     bleinit.onEventsToProcess(schedule_ble_events);
