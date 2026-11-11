@@ -90,7 +90,6 @@ void colorimetry() {
 
     while(true) {
 
-
         serial.printf("In colorimetry\r\n");        
 
         // used to check if ACK was received
@@ -113,10 +112,10 @@ void colorimetry() {
             serial.printf("Value of check: %d\r\n", check);
 
             serial.printf("ID number: %d\r\n", cmd_colorimetry[0]);
-        }        
 
-        // long sleep for so it doesn't keep showing up
-        ThisThread::sleep_for(500s);
+        }
+
+        ThisThread::sleep_for(15s);
     
     }
 }
@@ -129,7 +128,6 @@ void colorimetry() {
 // reading all the value but I have ben scouring for information
 // on reading color data from the sensor on the data sheet and nothing
 // point me in the right direction. I know pages 12 and 13 like the back of my hand
-
 void getvalues() {
 
     while (true) {
@@ -142,52 +140,167 @@ void getvalues() {
 
         //read in the colors
         cmd[0] = low_clear;
-        cmd[1] = high_clear;    
-        cmd[2] = low_red;
-        cmd[3] = high_red;
-        cmd[4] = low_green;
-        cmd[5] = high_green;
-        cmd[6] = low_blue;
-        cmd[7] = high_blue;
 
-        // if (i2c.write(addr8_write, cmd, 8)) {
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
 
-        //     check = 3;
-        //     serial.printf("Value of check: %d\r\n", check);
-
-        //     serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
-        //     serial.printf("Value of cmd[1]: %d\r\n", cmd[1]);
-        //     serial.printf("Value of cmd[2]: %d\r\n", cmd[2]);
-        //     serial.printf("Value of cmd[3]: %d\r\n", cmd[3]);
-        //     serial.printf("Value of cmd[4]: %d\r\n", cmd[4]);
-        //     serial.printf("Value of cmd[5]: %d\r\n", cmd[5]);
-        //     serial.printf("Value of cmd[6]: %d\r\n", cmd[6]);
-        //     serial.printf("Value of cmd[7]: %d\r\n", cmd[7]);
-
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
         
-        // }
+        }
 
     
-        if (i2c.read(addr8_read, cmd, 8) == 0) {
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
 
             check = 4;
-            serial.printf("Value of check: %d\r\n", check);
+            //serial.printf("Value of check: %d\r\n", check);
 
             serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
-            serial.printf("Value of cmd[1]: %d\r\n", cmd[1]);
-            serial.printf("Value of cmd[2]: %d\r\n", cmd[2]);
-            serial.printf("Value of cmd[3]: %d\r\n", cmd[3]);
-            serial.printf("Value of cmd[4]: %d\r\n", cmd[4]);
-            serial.printf("Value of cmd[5]: %d\r\n", cmd[5]);
-            serial.printf("Value of cmd[6]: %d\r\n", cmd[6]);
-            serial.printf("Value of cmd[7]: %d\r\n", cmd[7]);
 
         }
+
+
+        cmd[0] = high_clear;    
+
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
     
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }
 
 
+        cmd[0] = low_red;
 
-        ThisThread::sleep_for(100ms);
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
+    
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }
+
+
+        cmd[0] = high_red;
+
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
+    
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }
+
+
+        cmd[0] = low_green;
+
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
+    
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }
+
+
+        cmd[0] = high_green;
+
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
+    
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }
+
+
+        cmd[0] = low_blue;
+
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
+    
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }
+
+
+        cmd[0] = high_blue;
+
+        if (i2c.write(addr8_write, cmd, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
+
+    
+        if (i2c.read(addr8_read, cmd, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+
+        }        
+
+
+    
+        ThisThread::sleep_for(1s);
 
     }
 
@@ -216,10 +329,13 @@ int main() {
     ThisThread::sleep_for(1s);
 
     handshake.start(colorimetry);
-    //measurements.start(getvalues);
+
+    ThisThread::sleep_for(1s);
+
+    measurements.start(getvalues);
     
     while (true) {
-        ThisThread::sleep_for(100ms);
+        ThisThread::sleep_for(100s);
     }
 
 }
