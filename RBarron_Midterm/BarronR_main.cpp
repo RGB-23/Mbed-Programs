@@ -62,10 +62,9 @@ const int addr8_read = addr8_write + 0x1;
 I2C i2c(P0_14, P0_15);
 
 // The enable register 0x80 is used for turning the power on/off
-// how do I send power to a register or do I have to set that register
-// equal to 1?
-// this register says it is for voltage on the data sheet
-#define VDD (uint8_t)(0x80)
+// must write 0x3 to it to turn it on into collecting data mode tho
+#define ENABLE (uint8_t)(0x80)
+#define PEN (uint8_t)(0x3)
 
 
 // used for ID of sensor
@@ -115,7 +114,7 @@ void colorimetry() {
 
         }
 
-        ThisThread::sleep_for(15s);
+        ThisThread::sleep_for(100s);
     
     }
 }
@@ -136,32 +135,13 @@ void getvalues() {
     
         int check = 0;
 
-        char cmd[8];
+        char cmd_low[1];
+        char cmd_high[1];
 
         //read in the colors
-        cmd[0] = low_clear;
+        cmd_low[0] = low_clear;
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
-
-            check = 3;
-            //serial.printf("Value of check: %d\r\n", check);
-        
-        }
-
-    
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
-
-            check = 4;
-            //serial.printf("Value of check: %d\r\n", check);
-
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
-
-        }
-
-
-        cmd[0] = high_clear;    
-
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_low, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -169,19 +149,19 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_low, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            //serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
 
         }
 
 
-        cmd[0] = low_red;
+        cmd_high[0] = high_clear;    
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_high, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -189,19 +169,19 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_high, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            serial.printf("Value of clear: %d\r\n", cmd_high[0] << 8 | cmd_low[0]);
 
         }
 
 
-        cmd[0] = high_red;
+        cmd_low[0] = low_red;
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_low, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -209,19 +189,19 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_low, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            //serial.printf("Value of cmd[2]: %d\r\n", cmd[0]);
 
         }
 
 
-        cmd[0] = low_green;
+        cmd_high[0] = high_red;
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_high, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -229,19 +209,19 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_high, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            serial.printf("Value of red: %d\r\n", cmd_high[0] << 8 | cmd_low[0]);
 
         }
 
 
-        cmd[0] = high_green;
+        cmd_low[0] = low_green;
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_low, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -249,19 +229,19 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_low, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            //serial.printf("Value of cmd[4]: %d\r\n", cmd[0]);
 
         }
 
 
-        cmd[0] = low_blue;
+        cmd_high[0] = high_green;
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_high, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -269,19 +249,19 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_high, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            serial.printf("Value of green: %d\r\n", cmd_high[0] << 8 | cmd_low[0]);
 
         }
 
 
-        cmd[0] = high_blue;
+        cmd_low[0] = low_blue;
 
-        if (i2c.write(addr8_write, cmd, 1) == 0) {
+        if (i2c.write(addr8_write, cmd_low, 1) == 0) {
 
             check = 3;
             //serial.printf("Value of check: %d\r\n", check);
@@ -289,18 +269,38 @@ void getvalues() {
         }
 
     
-        if (i2c.read(addr8_read, cmd, 1) == 0) {
+        if (i2c.read(addr8_read, cmd_low, 1) == 0) {
 
             check = 4;
             //serial.printf("Value of check: %d\r\n", check);
 
-            serial.printf("Value of cmd[0]: %d\r\n", cmd[0]);
+            //serial.printf("Value of cmd[6]: %d\r\n", cmd[0]);
 
-        }        
+        }
 
+
+        cmd_high[0] = high_blue;
+
+        if (i2c.write(addr8_write, cmd_high, 1) == 0) {
+
+            check = 3;
+            //serial.printf("Value of check: %d\r\n", check);
+        
+        }
 
     
-        ThisThread::sleep_for(1s);
+        if (i2c.read(addr8_read, cmd_high, 1) == 0) {
+
+            check = 4;
+            //serial.printf("Value of check: %d\r\n", check);
+
+            serial.printf("Value of blue: %d\r\n", cmd_high[0] << 8 | cmd_low[0]);
+
+        }
+
+
+        // thread must run every 100ms or faster
+        ThisThread::sleep_for(100ms);
 
     }
 
@@ -322,13 +322,24 @@ void separateThread() {
 // main() runs in its own thread in the OS
 int main() {
 
-    // set up pull up for PIN0
+    // set pull up for PIN0
     setbit(DIRSET_PORT1, PIN0);
     setbit(SET_PORT1, PIN0);
 
     ThisThread::sleep_for(1s);
 
     handshake.start(colorimetry);
+
+    ThisThread::sleep_for(1s);
+
+    // enable the sensor to start reading RGB values
+    char enable[2];
+
+    enable[0] = ENABLE; // enable register
+    enable[1] = PEN; // power enable
+
+    // now the colorimetry can start bcuz the reading is powered on
+    i2c.write(addr8_write, enable, 2);
 
     ThisThread::sleep_for(1s);
 
